@@ -2,3 +2,6 @@
 *.*.swp
 *.pyc
 env
+.vagrant
+do.sh
+output
