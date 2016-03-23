@@ -1,4 +1,4 @@
-from osm.download import Downloader
-from osm.extract import Extractor
-from osm.load import Loader
-from osm.mongo import MongoLoader
+from download import Downloader
+from extract import Extractor
+from load import OSMLoader, S3Loader
+from mongo import MongoLoader

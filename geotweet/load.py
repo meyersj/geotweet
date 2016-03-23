@@ -1,7 +1,8 @@
 from lxml.etree import iterparse
+import boto3
 
 
-class Loader(object):
+class OSMLoader(object):
     """
     Process osm files containing POI nodes
 
@@ -43,3 +44,16 @@ class Loader(object):
             if child.tag == "tag":
                 tags[key] = child.attrib.get('v')
         return tags
+
+
+class S3Loader(object):
+
+    def __init__(self, aws_key, aws_secret, aws_region):
+        os.environ['AWS_ACCESS_KEY_ID'] = aws_key
+        os.environ['AWS_SECRET_ACCESS_KEY'] = aws_secret
+        os.environ['AWS_DEFAULT_REGION'] = aws_region
+
+    def store(self, bucket, filepath):
+        filename = filepath.rsplit('/', 1)[-1]
+        s3 = boto3.resource('s3')
+        s3.Object(bucket, filename).put(Body=open(filepath, 'rb'))

@@ -2,11 +2,10 @@ import sys
 import os
 import errno
 import shutil
-import glob
 
 from geotweet import Downloader
 from geotweet import Extractor
-from geotweet import Loader
+from geotweet import OSMLoader
 from geotweet import MongoLoader
 
 
@@ -15,8 +14,34 @@ scriptdir = os.path.dirname(os.path.realpath(__file__))
 DEFAULT_OUT_DIR = os.path.join(scriptdir, 'output/poi')
 DEFAULT_POI_TAGS = ['amenity', 'builing', 'shop', 'office', 'tourism']
 DEFAULT_STATES = os.path.join(scriptdir, 'data/states.txt')
-DEFAULT_PBF = 'http://download.geofabrik.de/north-america/us/rhode-island.osm.bz2'
+DEFAULT_PBF = 'http://download.geofabrik.de/north-america/us/rhode-island.osm.pbf'
 DEFAULT_MONGODB_URI = 'mongodb://127.0.0.1:27017'
+
+AWS_KEY = os.getenv('_AWS_KEY')
+AWS_SECRET = os.getenv('_AWS_SECRET')
+AWS_REGION = os.getenv('us-west-2')
+
+TEST_LOCAL_PBF = os.path.join(scriptdir, "data/oregon-latest.osm.pbf")
+
+
+def main(args):
+    if len(args) == 2:
+        # download states listed in file passed as parameter
+        runner(source=sys.argv[1], batch=True)
+    else:
+        runner(source=DEFAULT_STATES, batch=True)
+
+
+def runner(source=DEFAULT_PBF, outdir=DEFAULT_OUT_DIR, batch=False):
+    """
+    Top level runner to download osm data, extract POI nodes and load into mongodb
+
+    """
+    #downloaded = download_osm_data(source, batch=batch)
+    prepare_output_directory(outdir)
+    downloaded = [TEST_LOCAL_PBF]
+    poi_files = extract_points_of_interest(downloaded, outdir)
+    load_mongo(poi_files)
 
 
 def prepare_output_directory(outdir):
@@ -53,9 +78,9 @@ def download_osm_data(source, batch=False):
 
     dl = Downloader()
     if batch:
-        # download states listed in @source file
+        # download states listed in source file
         return dl.download(source)
-    # download single file using url specified by @source
+    # download single file using url specified by source
     return [dl._download(source)]
     
 
@@ -72,6 +97,7 @@ def extract_points_of_interest(pbf_extracts, outdir):
     poi_files = Extractor(tags=DEFAULT_POI_TAGS).extract(pbf_extracts, outdir)
     return poi_files
 
+
 def load_mongo(poi_files, mongo_uri=DEFAULT_MONGODB_URI):
     """
     Read each osm file and convert each node to json and load into mongo
@@ -81,26 +107,7 @@ def load_mongo(poi_files, mongo_uri=DEFAULT_MONGODB_URI):
 
     """
     mongo = MongoLoader('osm', uri=mongo_uri)
-    Loader().load(poi_files, mongo.insert)  
-
-
-def runner(source=DEFAULT_PBF, outdir=DEFAULT_OUT_DIR, batch=False):
-    """
-    Runner function to download osm data, extract POI nodes and load into mongodb
-
-    """
-    #downloaded = download_osm_data(source, batch=batch)
-    prepare_output_directory(outdir)
-    downloaded = ["/home/jeff/github/twitter-osm/data/oregon-latest.osm.pbf"]
-    poi_files = extract_points_of_interest(downloaded, outdir)
-    load_mongo(poi_files)
-
-
-def main(args):
-    if len(args) == 2:
-        runner(source=sys.argv[1], batch=True)
-    else:
-        runner(source=DEFAULT_STATES, batch=True)
+    OSMLoader().load(poi_files, mongo.insert)  
 
 
 if __name__ == '__main__':
