@@ -1,3 +1,0 @@
-http://download.geofabrik.de/north-america/us/delaware-latest.osm.bz2
-http://download.geofabrik.de/north-america/us/hawaii-latest.osm.bz2
-http://download.geofabrik.de/north-america/us/rhode-island-latest.osm.bz2
