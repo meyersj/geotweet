@@ -18,7 +18,7 @@ function python_env {
 
 function osmosis {
     cd /opt
-    mkdir -f /opt/osmosis
+    mkdir -p /opt/osmosis
     cd /opt/osmosis
     wget http://bretth.dev.openstreetmap.org/osmosis-build/osmosis-latest.tgz
     tar xvfz osmosis-latest.tgz
