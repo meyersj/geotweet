@@ -1,46 +1,85 @@
 import os
 import sys
-import pprint
 
 import twitter
-import time
 
-pp = pprint.PrettyPrinter(indent=4)
-portland = "-123.784828,44.683842,-121.651703,46.188969 "
+from mongo import MongoQuery
 
 
-def validate(key, record):
-    if key in record and record[key]:
-        return True
-    return False
+PORTLAND = ["-123.784828,44.683842", "-121.651703,46.188969"]
+TWITTER_ENV = [
+    "TWITTER_CONSUMER_KEY",
+    "TWITTER_CONSUMER_SECRET",
+    "TWITTER_ACCESS_TOKEN_KEY",
+    "TWITTER_ACCESS_TOKEN_SECRET"
+]
 
 
-class Connect(object):
+def main():
+    handler = TweetHandler(MongoQuery())
+    stream = Stream()
+    stream.start(handler.handle)
+
+
+class TweetHandler(object):
+
+    def __init__(self, mongo):
+        self.mongo = mongo:
+
+    def handle(self, record):
+        user = User(record['user'])
+        tweet = Tweet(record)
+        print user
+        print tweet
+        print " - - -"
+        query = m.near_query(tweet.coordinates["coordinates"], 20)
+        for t in m.find(query=query):
+            print t
+        print "------"
+        print
+
+
+class Stream(object):
 
     def __init__(self):
-        self.consumer_key = os.getenv('TWITTER_CONSUMER_KEY')
-        self.consumer_secret = os.getenv('TWITTER_CONSUMER_SECRET')
-        self.access_token_key = os.getenv('TWITTER_ACCESS_TOKEN_KEY')
-        self.access_token_secret = os.getenv('TWITTER_ACCESS_TOKEN_SECRET')
+        self.validate_env()                        
+        self.api = self.get_client()
 
-    def client(self):
+    def validate_env(self):
+        error = "Error: Make sure following environment variables are set\n"
+        error += "\t" + "\n\t".join(TWITTER_ENV) + "\n"
+        for env in TWITTER_ENV:
+            if not os.getenv(env, None):
+                print error
+                value = "environment variable {0} not set".format(env)
+                raise EnvironmentError(value)
+    
+    def _validate(self, key, record):
+        if key in record and record[key]:
+            return True
+        return False
+   
+    def validate(self, record):
+        return self._validate('user', record) and self._validate('geo', record)
+
+    def get_client(self):
         try:
             api = twitter.Api(
-                consumer_key=self.consumer_key,
-                consumer_secret=self.consumer_secret,
-                access_token_key=self.access_token_key,
-                access_token_secret=self.access_token_secret
+                consumer_key=os.getenv('TWITTER_CONSUMER_KEY'),
+                consumer_secret=os.getenv('TWITTER_CONSUMER_SECRET'),
+                access_token_key=os.getenv('TWITTER_ACCESS_TOKEN_KEY'),
+                access_token_secret=os.getenv('TWITTER_ACCESS_TOKEN_SECRET')
             )
             verify = api.VerifyCredentials()
         except twitter.error.TwitterError as e:
-            print "Error connecting to twitter API"
-            print "Make sure following environment variables are set"
-            print "\tTWITTER_CONSUMER_KEY"
-            print "\tTWITTER_CONSUMER_SECRET"
-            print "\tTWITTER_ACCESS_TOKEN_KEY"
-            print "\tTWITTER_ACCESS_TOKEN_SECRET"
+            print e, "\nError connecting to twitter API\n"
             sys.exit(1)
         return api
+
+    def start(self, handler):
+        for record in self.api.GetStreamFilter(locations=PORTLAND):
+            if self.validate(record):
+                handler(record)
 
 
 class Obj(object):
@@ -78,7 +117,7 @@ class User(Obj):
         return ret
 
 
-class GeoTweet(Obj):
+class Tweet(Obj):
 
     def __init__(self, tweet):
         self.tweet_id = tweet['id_str']
@@ -101,35 +140,5 @@ class GeoTweet(Obj):
         return ret
 
 
-class Runner(object):
-
-    @staticmethod
-    def location_stream(api, locations):
-        for record in api.GetStreamFilter(locations=locations):
-            if validate('user', record) and validate('geo', record):
-                user = User(record['user'])
-                print user
-                print
-                #pp.pprint(record)
-                tweet = GeoTweet(record)
-                print tweet
-                geo_tweets = Runner.user_stream(api, record['user']['id'])
-                print "-------"
-                #print
-
-    @staticmethod
-    def user_stream(api, user_id):
-        for record in api.GetUserTimeline(user_id=user_id):
-            if record.coordinates:
-                print "\t", record.created_at
-                print "\t", record.text
-                print "\t", record.coordinates
-                print
-
-def stream():
-    api = Connect().client()
-    if api:
-        Runner.location_stream(api, [portland])
-
 if __name__ == "__main__":
-    stream()
+    main()
