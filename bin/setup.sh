@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 
+
 function dependencies {
     apt-get update
     apt-get install -y \
@@ -9,7 +10,10 @@ function dependencies {
         libxml2-dev libxslt1-dev \
         libffi-dev \
         default-jre
-    pip install virtualenv
+}
+
+function python_env {
+    pip install -r /vagrant/requirements.txt    
 }
 
 function osmosis {
@@ -37,5 +41,6 @@ function mongo {
 }
 
 dependencies
+python_env
 osmosis
 mongo
