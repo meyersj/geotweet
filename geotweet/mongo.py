@@ -8,7 +8,7 @@ PORTLAND = [-122.675983, 45.524764]
 class Mongo(object):
     """ Base wrapper class to connect to mongo and intialize a collection """
     
-    def __init__(self, db, uri=URI, collection="poi"):
+    def __init__(self, db="osm", uri=URI, collection="poi"):
         self.client = MongoClient(URI)
         self.db = self.client[db]
         self.collection = self.db[collection]
