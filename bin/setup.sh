@@ -24,15 +24,14 @@ function osmosis {
     tar xvfz osmosis-latest.tgz
     rm osmosis-latest.tgz
     chmod a+x bin/osmosis
-    bin/osmosis
-    ln -s /usr/bin/osmosis ${PWD}/bin/osmosis
+    ln -s ${PWD}/bin/osmosis /usr/bin/osmosis
     cd -
 }
 
 function mongo {
-    apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv EA312927
-    deb_src="http://repo.mongodb.org/apt/ubuntu trusty/mongodb-org/3.2 multiverse"
-    echo "deb ${deb_src} | tee /etc/apt/sources.list.d/mongodb-org-3.2.list"
+    apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
+    deb="deb http://repo.mongodb.org/apt/ubuntu trusty/mongodb-org/3.0 multiverse"
+    echo "${deb}" | tee /etc/apt/sources.list.d/mongodb-org-3.0.list
     apt-get update
     apt-get install -y mongodb-org
     # listen on all interfaces
