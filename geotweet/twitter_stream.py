@@ -6,8 +6,12 @@ import twitter
 from mongo import MongoQuery
 
 
+# Bounding Boxes
+# [Lon,Lat SW corner, Lon,Lat NE corner]
 PORTLAND = ["-123.784828,44.683842", "-121.651703,46.188969"]
-TWITTER_ENV = [
+US = ["-125.0011,24.9493", "-66.9326,49.5904"]
+
+TWITTER_ENVVAR = [
     "TWITTER_CONSUMER_KEY",
     "TWITTER_CONSUMER_SECRET",
     "TWITTER_ACCESS_TOKEN_KEY",
@@ -16,39 +20,96 @@ TWITTER_ENV = [
 
 
 def main():
-    handler = TweetHandler(MongoQuery())
-    stream = Stream()
-    stream.start(handler.handle)
+    handler = TweetHandler()
+    handler.add_step(InitialProcessStep())
+    handler.add_step(GeoSearchStep(MongoQuery()))
+    handler.add_step(TimelineStep())
+    stream = TwitterStream()
+    stream.start(handler.handle, locations=PORTLAND)
+
+
+class TwitterClient(object):
+    
+    def __init__(self):
+        try:
+            self.api = twitter.Api(
+                consumer_key=os.getenv('TWITTER_CONSUMER_KEY'),
+                consumer_secret=os.getenv('TWITTER_CONSUMER_SECRET'),
+                access_token_key=os.getenv('TWITTER_ACCESS_TOKEN_KEY'),
+                access_token_secret=os.getenv('TWITTER_ACCESS_TOKEN_SECRET')
+            )
+            self.api.VerifyCredentials()
+        except twitter.error.TwitterError as e:
+            print e, "\nError connecting to twitter API\n"
+            sys.exit(1)
 
 
 class TweetHandler(object):
 
-    def __init__(self, mongo):
-        self.mongo = mongo:
+    def __init__(self):
+        self.steps = []
+
+    def add_step(self, handler):
+        self.steps.append(handler)
 
     def handle(self, record):
-        user = User(record['user'])
+        for step in self.steps:
+            if record:
+                record = step.run(record)
+        return record
+
+class InitialProcessStep(object):
+    """ Run initial processing on status received from stream """
+    def run(self, record):
         tweet = Tweet(record)
-        print user
-        print tweet
-        print " - - -"
-        query = m.near_query(tweet.coordinates["coordinates"], 20)
-        for t in m.find(query=query):
+        tweet.display()
+        print "- - -"
+        return tweet
+
+
+class GeoSearchStep(object):
+    
+    def __init__(self, mongo):
+        self.mongo = mongo
+    
+    def run(self, record):
+        print "SEARCH"
+        lonlat = record.lonlat
+        for t in self.mongo.find(query=self.mongo.near_query(lonlat, 20)):
             print t
-        print "------"
-        print
+        print "/ / /"
+        return record
 
 
-class Stream(object):
+class TimelineStep(object):
+    
+    def __init__(self):
+        self.api = TwitterClient().api
+    
+    def run(self, record):
+        print "TIMELINE USER", record.user_id
+        for status in self.api.GetUserTimeline(record.user_id, count=200):
+            status = status.AsDict()
+            if "geo" in status:
+                tweet = Tweet(status)
+                print "\t", tweet.name
+                print "\t", tweet.created_at
+                print "\t", tweet.lonlat
+                print "\t", tweet.record['text']
+                print
+        print ". . ."
+        return record
+
+class TwitterStream(object):
 
     def __init__(self):
-        self.validate_env()                        
-        self.api = self.get_client()
+        self.validate_envvar()                        
+        self.api = TwitterClient().api
 
-    def validate_env(self):
+    def validate_envvar(self):
         error = "Error: Make sure following environment variables are set\n"
-        error += "\t" + "\n\t".join(TWITTER_ENV) + "\n"
-        for env in TWITTER_ENV:
+        error += "\t" + "\n\t".join(TWITTER_ENVVAR) + "\n"
+        for env in TWITTER_ENVVAR:
             if not os.getenv(env, None):
                 print error
                 value = "environment variable {0} not set".format(env)
@@ -59,45 +120,23 @@ class Stream(object):
             return True
         return False
    
-    def validate(self, record):
+    def validate_geotweet(self, record):
         return self._validate('user', record) and self._validate('geo', record)
-
-    def get_client(self):
-        try:
-            api = twitter.Api(
-                consumer_key=os.getenv('TWITTER_CONSUMER_KEY'),
-                consumer_secret=os.getenv('TWITTER_CONSUMER_SECRET'),
-                access_token_key=os.getenv('TWITTER_ACCESS_TOKEN_KEY'),
-                access_token_secret=os.getenv('TWITTER_ACCESS_TOKEN_SECRET')
-            )
-            verify = api.VerifyCredentials()
-        except twitter.error.TwitterError as e:
-            print e, "\nError connecting to twitter API\n"
-            sys.exit(1)
-        return api
-
-    def start(self, handler):
-        for record in self.api.GetStreamFilter(locations=PORTLAND):
-            if self.validate(record):
+    
+    def start(self, handler, locations=PORTLAND):
+        for record in self.api.GetStreamFilter(locations=locations):
+            if self.validate_geotweet(record):
                 handler(record)
 
 
-class Obj(object):
-   
-    def _display(self, ident, data, line_end=True):
-        try:
-            data = str(data) if data else ""    
-        except UnicodeEncodeError:
-            data = ""    
-        line = "{0}: {1}".format(ident, data)
-        if line_end:
-            return line + "\n"
-        return line
+class Tweet(object):
 
+    def __init__(self, record):
+        self.extract_user(record['user'])
+        self.extract_meta(record)
+        self.record = record
 
-class User(Obj):
-
-    def __init__(self, user):
+    def extract_user(self, user):
         self.user_id = user['id']
         self.name = user['name']
         self.screen_name = user['screen_name']
@@ -106,38 +145,24 @@ class User(Obj):
         self.friends_count = user['friends_count']
         self.followers_count = user['followers_count']
 
-    def __repr__(self):
-        ret = self._display("ID", self.user_id)
-        ret += self._display("User", self.name)
-        ret += self._display("Screen Name", self.screen_name)
-        ret += self._display("Description", self.description)
-        ret += self._display("Location", self.location)
-        ret += self._display("Friends Count", self.friends_count)
-        ret += self._display("Followers Count", self.followers_count, line_end=False)
-        return ret
-
-
-class Tweet(Obj):
-
-    def __init__(self, tweet):
-        self.tweet_id = tweet['id_str']
-        self.text = tweet['text']
+    def extract_meta(self, tweet):
+        #self.tweet_id = tweet['id_str']
         self.source = tweet['source']
         self.created_at = tweet['created_at']
         self.timestamp = tweet['timestamp_ms']
-        self.coordinates = tweet['coordinates']
+        self.lonlat = tweet['coordinates']['coordinates']
     
-    def __repr__(self):
-        ret = self._display("ID", self.tweet_id)
-        ret += self._display("Created At", self.created_at)
-        ret += self._display("Timestamp", self.timestamp)
-        ret += self._display("Coordinates", self.coordinates)
-        ret += self._display("Source", self.source)
-        try:
-            ret += "Text:\n\n" + str(self.text)
-        except UnicodeEncodeError:
-            ret += "Text:\n\n"
-        return ret
+    def display(self):
+        print self.user_id
+        print self.name
+        print self.screen_name
+        print self.description
+        print self.location
+        print "TWEET"
+        print self.created_at, self.timestamp
+        print "GEO", self.lonlat
+        print self.source
+        print self.record['text']
 
 
 if __name__ == "__main__":
