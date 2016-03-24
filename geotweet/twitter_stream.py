@@ -1,5 +1,8 @@
 import os
 import sys
+import logging
+import json
+from logging.handlers import TimedRotatingFileHandler
 
 import twitter
 
@@ -20,12 +23,9 @@ TWITTER_ENVVAR = [
 
 
 def main():
-    handler = TweetHandler()
-    handler.add_step(InitialProcessStep())
-    handler.add_step(GeoSearchStep(MongoQuery()))
-    handler.add_step(TimelineStep())
+    handler = LogTweetHandler('/tmp/twitter-stream.log')
     stream = TwitterStream()
-    stream.start(handler.handle, locations=PORTLAND)
+    stream.start(handler.handle, locations=US)
 
 
 class TwitterClient(object):
@@ -44,61 +44,32 @@ class TwitterClient(object):
             sys.exit(1)
 
 
-class TweetHandler(object):
+class LogTweetHandler(object):
 
-    def __init__(self):
-        self.steps = []
-
-    def add_step(self, handler):
-        self.steps.append(handler)
+    def __init__(self, logfile):
+        self.logger = self.get_logger(logfile)  
+    
+    def get_logger(self, logfile):
+        logger = logging.getLogger('LogTweet')
+        logger.setLevel(logging.INFO)
+        handler = TimedRotatingFileHandler(logfile, when="H", interval=1)
+        logger.addHandler(handler)
+        return logger
+   
+    def _validate(self, key, record):
+        if key in record and record[key]:
+            return True
+        return False
+   
+    def validate_geotweet(self, record):
+        return self._validate('user', record) and self._validate('geo', record)
 
     def handle(self, record):
-        for step in self.steps:
-            if record:
-                record = step.run(record)
-        return record
+        if self.validate_geotweet(record):
+            #print record
+            tweet = Tweet(record)
+            self.logger.info(tweet.as_json())
 
-class InitialProcessStep(object):
-    """ Run initial processing on status received from stream """
-    def run(self, record):
-        tweet = Tweet(record)
-        tweet.display()
-        print "- - -"
-        return tweet
-
-
-class GeoSearchStep(object):
-    
-    def __init__(self, mongo):
-        self.mongo = mongo
-    
-    def run(self, record):
-        print "SEARCH"
-        lonlat = record.lonlat
-        for t in self.mongo.find(query=self.mongo.near_query(lonlat, 20)):
-            print t
-        print "/ / /"
-        return record
-
-
-class TimelineStep(object):
-    
-    def __init__(self):
-        self.api = TwitterClient().api
-    
-    def run(self, record):
-        print "TIMELINE USER", record.user_id
-        for status in self.api.GetUserTimeline(record.user_id, count=200):
-            status = status.AsDict()
-            if "geo" in status:
-                tweet = Tweet(status)
-                print "\t", tweet.name
-                print "\t", tweet.created_at
-                print "\t", tweet.lonlat
-                print "\t", tweet.record['text']
-                print
-        print ". . ."
-        return record
 
 class TwitterStream(object):
 
@@ -115,19 +86,10 @@ class TwitterStream(object):
                 value = "environment variable {0} not set".format(env)
                 raise EnvironmentError(value)
     
-    def _validate(self, key, record):
-        if key in record and record[key]:
-            return True
-        return False
-   
-    def validate_geotweet(self, record):
-        return self._validate('user', record) and self._validate('geo', record)
-    
     def start(self, handler, locations=PORTLAND):
         for record in self.api.GetStreamFilter(locations=locations):
-            if self.validate_geotweet(record):
-                handler(record)
-
+            handler(record)
+           
 
 class Tweet(object):
 
@@ -146,12 +108,22 @@ class Tweet(object):
         self.followers_count = user['followers_count']
 
     def extract_meta(self, tweet):
-        #self.tweet_id = tweet['id_str']
+        self.tweet_id = tweet['id_str']
         self.source = tweet['source']
         self.created_at = tweet['created_at']
         self.timestamp = tweet['timestamp_ms']
         self.lonlat = tweet['coordinates']['coordinates']
-    
+  
+    def as_json(self):
+        return json.dumps(dict(
+            user_id=self.user_id, name=self.name, screen_name=self.screen_name,
+            description=self.description, location=self.location,
+            friends_count=self.friends_count, followers_count=self.followers_count,
+            tweet_id=self.tweet_id, source=self.source, created_at=self.created_at,
+            timestamp=self.timestamp, lonlat=self.lonlat,
+            text=self.record['text']
+        ))
+
     def display(self):
         print self.user_id
         print self.name
