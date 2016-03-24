@@ -17,14 +17,20 @@ DEFAULT_STATES = os.path.join(scriptdir, 'data/states.txt')
 DEFAULT_PBF = 'http://download.geofabrik.de/north-america/us/rhode-island.osm.pbf'
 DEFAULT_MONGODB_URI = 'mongodb://127.0.0.1:27017'
 
-AWS_KEY = os.getenv('_AWS_KEY')
-AWS_SECRET = os.getenv('_AWS_SECRET')
-AWS_REGION = os.getenv('us-west-2')
+#AWS_KEY = os.getenv('_AWS_KEY')
+#AWS_SECRET = os.getenv('_AWS_SECRET')
+#AWS_REGION = 'us-west-2'
 
 TEST_LOCAL_PBF = os.path.join(scriptdir, "data/oregon-latest.osm.pbf")
 
 
 def main(args):
+    """
+    Usage: python runner.py [/path/to/states.txt]
+
+    optional argument containing path to txt file containing list of US state
+    names to process data for
+    """
     if len(args) == 2:
         # download states listed in file passed as parameter
         runner(source=sys.argv[1], batch=True)
