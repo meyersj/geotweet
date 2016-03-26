@@ -15,19 +15,24 @@ LOG_DIR = os.getenv("GEOTWEET_STREAM_DIR", "/tmp/geotweet")
 PORTLAND = ["-123.784828,44.683842", "-121.651703,46.188969"]
 US = ["-125.0011,24.9493", "-66.9326,49.5904"]
 LOCATIONS = US
-
+INTERVAL = int(os.getenv("GEOTWEET_STREAM_LOG_INTERVAL", 60))
 
 try:
-    os.mkdir(LOG_DIR):
+    os.mkdir(LOG_DIR)
 except:
     pass
 
 
 def main():
     log = os.path.join(LOG_DIR, 'twitter-stream.log')
-    handler = LogTweetHandler(log, interval=1)
+    
+    logger.info("Starting Twitter Streaming API")
+    logger.info("Streaming to output log: {0}".format(log))
+    logger.info("Log Interval (min): {0}".format(INTERVAL))
+
+    handler = LogTweetHandler(log, interval=INTERVAL)
     stream = TwitterStream()
-    stream.start(handler.handle, locations=LOCATIONS)
+    stream.start(handler, locations=LOCATIONS)
 
 
 class TwitterClient(object):
@@ -42,7 +47,7 @@ class TwitterClient(object):
             )
             self.api.VerifyCredentials()
         except twitter.error.TwitterError as e:
-            print e, "\nError connecting to twitter API\n"
+            logger.error("Error connecting to twitter API")
             sys.exit(1)
 
 
@@ -51,7 +56,8 @@ class LogTweetHandler(object):
     def __init__(self, logfile, interval=60, when="M"):
         """ interval is number of minutes for each log file """
         self.logger = get_rotating_logger(logfile, interval)
-   
+        self.logfile = logfile
+
     def _validate(self, key, record):
         if key in record and record[key]:
             return True
@@ -91,8 +97,13 @@ class TwitterStream(object):
                 raise EnvironmentError(value)
     
     def start(self, handler, locations=PORTLAND):
-        for record in self.api.GetStreamFilter(locations=locations):
-            handler(record)
+        try:
+            for record in self.api.GetStreamFilter(locations=locations):
+                handler.handle(record)
+        except Exception as e:
+            print e
+            logger.error(e)
+            sys.exit(1)
            
 
 class Tweet(object):
