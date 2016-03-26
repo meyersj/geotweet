@@ -2,7 +2,7 @@ Geotweet
 ========
 
 
-This project contains scripts to process tweets for the Twitter Streaming API into Amazon S3 Buckets. The intention is the use the output as input to Elastic Map Reduce jobs
+This project contains scripts to retrieve tweets from the Twitter Streaming API and load into Amazon S3 Buckets. The intention is the use the tweets in S3 as input to Elastic Map Reduce jobs
 
 Install dependencies
 ```bash
