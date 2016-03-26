@@ -6,6 +6,7 @@ from logging.handlers import TimedRotatingFileHandler
 
 import twitter
 
+from log import logger, get_rotating_logger
 
 # Bounding Boxes
 # [Lon,Lat SW corner, Lon,Lat NE corner]
@@ -21,7 +22,9 @@ TWITTER_ENVVAR = [
 
 
 def main():
-    handler = LogTweetHandler('/tmp/twitter-stream.log')
+    log = '/tmp/twitter-stream.log'
+    log = '/home/jeff/github/geotweet/output/twitter-stream.log'
+    handler = LogTweetHandler(log, interval=1)
     stream = TwitterStream()
     stream.start(handler.handle, locations=US)
 
@@ -44,15 +47,9 @@ class TwitterClient(object):
 
 class LogTweetHandler(object):
 
-    def __init__(self, logfile):
-        self.logger = self.get_logger(logfile)  
-    
-    def get_logger(self, logfile):
-        logger = logging.getLogger('LogTweet')
-        logger.setLevel(logging.INFO)
-        handler = TimedRotatingFileHandler(logfile, when="H", interval=1)
-        logger.addHandler(handler)
-        return logger
+    def __init__(self, logfile, interval=60, when="M"):
+        """ interval is number of minutes for each log file """
+        self.logger = get_rotating_logger(logfile, interval)
    
     def _validate(self, key, record):
         if key in record and record[key]:
@@ -60,11 +57,12 @@ class LogTweetHandler(object):
         return False
    
     def validate_geotweet(self, record):
+        """ check that stream record is actual tweet with coordinates """
         return self._validate('user', record) and self._validate('geo', record)
 
     def handle(self, record):
+        """ called when a record is received from the Twitter API stream """
         if self.validate_geotweet(record):
-            #print record
             tweet = Tweet(record)
             self.logger.info(tweet.as_json())
 
@@ -80,8 +78,8 @@ class TwitterStream(object):
         error += "\t" + "\n\t".join(TWITTER_ENVVAR) + "\n"
         for env in TWITTER_ENVVAR:
             if not os.getenv(env, None):
-                print error
                 value = "environment variable {0} not set".format(env)
+                logger.error(value)
                 raise EnvironmentError(value)
     
     def start(self, handler, locations=PORTLAND):
