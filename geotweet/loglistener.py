@@ -1,4 +1,5 @@
 import sys
+import os
 
 import pyinotify
 
@@ -6,7 +7,7 @@ from load import S3Loader
 from log import logger
 
 
-BUCKET = "jeffrey.alan.meyers.geotweet"
+BUCKET = os.getenv("AWS_BUCKET", "jeffrey.alan.meyers.geotweet")
 LOG_DIR = os.getenv("GEOTWEET_STREAM_DIR", "/tmp/geotweet")
 
 
