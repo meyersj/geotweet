@@ -6,8 +6,6 @@ from logging.handlers import TimedRotatingFileHandler
 
 import twitter
 
-from mongo import MongoQuery
-
 
 # Bounding Boxes
 # [Lon,Lat SW corner, Lon,Lat NE corner]

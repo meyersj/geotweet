@@ -47,11 +47,13 @@ class OSMLoader(object):
 
 
 class S3Loader(object):
+    
+    envvars = ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_DEFAULT_REGION']
 
-    def __init__(self, aws_key, aws_secret, aws_region):
-        os.environ['AWS_ACCESS_KEY_ID'] = aws_key
-        os.environ['AWS_SECRET_ACCESS_KEY'] = aws_secret
-        os.environ['AWS_DEFAULT_REGION'] = aws_region
+    def __init__(self, aws_key="", aws_secret="", aws_region=""):
+        for envvar in self.envars:
+            error = "Error: Environment variable {0} not set".format(envvar)
+            raise EnvironmentError(error)
 
     def store(self, bucket, filepath):
         filename = filepath.rsplit('/', 1)[-1]

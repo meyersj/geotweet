@@ -17,6 +17,7 @@ class Extractor(object):
     def extract(self, source_pbfs, outdir, clean=False):
         extracted = []
         for source in source_pbfs:
+            # get filename without the .pbf extension
             fileroot = source.rsplit('/', 1)[-1].rsplit('.', 1)[0]
             target = os.path.join(outdir, fileroot)
             if self._extract(source, target):
