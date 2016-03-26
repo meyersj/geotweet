@@ -37,6 +37,12 @@ class LogEventS3Handler(pyinotify.ProcessEvent):
 class LogListener(object):
     
     def __init__(self, log_dir=LOG_DIR):
+        """
+        Listen for changes to files in log_dir
+
+        When TwitterStream rotates a log the event handler will be called
+        The LogEventS3Handler will load the log file into a s3 bucket on AWS
+        """
         wm = pyinotify.WatchManager()
         self.notifier = pyinotify.Notifier(wm, LogEventS3Handler())
         self.log_dir = log_dir
