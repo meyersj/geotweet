@@ -8,25 +8,26 @@ import twitter
 
 from log import logger, get_rotating_logger
 
+
+LOG_DIR = os.getenv("GEOTWEET_STREAM_DIR", "/tmp/geotweet")
 # Bounding Boxes
 # [Lon,Lat SW corner, Lon,Lat NE corner]
 PORTLAND = ["-123.784828,44.683842", "-121.651703,46.188969"]
 US = ["-125.0011,24.9493", "-66.9326,49.5904"]
+LOCATIONS = US
 
-TWITTER_ENVVAR = [
-    "TWITTER_CONSUMER_KEY",
-    "TWITTER_CONSUMER_SECRET",
-    "TWITTER_ACCESS_TOKEN_KEY",
-    "TWITTER_ACCESS_TOKEN_SECRET"
-]
+
+try:
+    os.mkdir(LOG_DIR):
+except:
+    pass
 
 
 def main():
-    log = '/tmp/twitter-stream.log'
-    log = '/home/jeff/github/geotweet/output/twitter-stream.log'
+    log = os.path.join(LOG_DIR, 'twitter-stream.log')
     handler = LogTweetHandler(log, interval=1)
     stream = TwitterStream()
-    stream.start(handler.handle, locations=US)
+    stream.start(handler.handle, locations=LOCATIONS)
 
 
 class TwitterClient(object):
@@ -68,6 +69,13 @@ class LogTweetHandler(object):
 
 
 class TwitterStream(object):
+    
+    ENVVARS = [
+        "TWITTER_CONSUMER_KEY",
+        "TWITTER_CONSUMER_SECRET",
+        "TWITTER_ACCESS_TOKEN_KEY",
+        "TWITTER_ACCESS_TOKEN_SECRET"
+    ]
 
     def __init__(self):
         self.validate_envvar()                        
@@ -75,8 +83,8 @@ class TwitterStream(object):
 
     def validate_envvar(self):
         error = "Error: Make sure following environment variables are set\n"
-        error += "\t" + "\n\t".join(TWITTER_ENVVAR) + "\n"
-        for env in TWITTER_ENVVAR:
+        error += "\t" + "\n\t".join(self.ENVVARS) + "\n"
+        for env in self.ENVVARS:
             if not os.getenv(env, None):
                 value = "environment variable {0} not set".format(env)
                 logger.error(value)
