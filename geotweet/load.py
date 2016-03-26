@@ -1,3 +1,5 @@
+import os
+
 from lxml.etree import iterparse
 import boto3
 
@@ -50,10 +52,14 @@ class S3Loader(object):
     
     envvars = ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_DEFAULT_REGION']
 
-    def __init__(self, aws_key="", aws_secret="", aws_region=""):
-        for envvar in self.envars:
-            error = "Error: Environment variable {0} not set".format(envvar)
-            raise EnvironmentError(error)
+    def __init__(self):
+        pass
+
+    def valid(self):
+        for envvar in self.envvars:
+            if not os.getenv(envvar):
+                error = "Error: Environment variable {0} not set".format(envvar)
+                raise EnvironmentError(error)
 
     def store(self, bucket, filepath):
         filename = filepath.rsplit('/', 1)[-1]
