@@ -24,15 +24,14 @@ US = ["-125.0011,24.9493", "-66.9326,49.5904"]
 LOCATIONS = US
 ```
 
-The filtered tweets are stored into a log file as json. The default location is `/tmp'.
+The filtered tweets are stored into a log file as json.
 
 You must set the following **environment variables**
-
 ```bash
 export GEOTWEET_LOG="/var/log/geotweet.log"
-export GEOTWEET_STREAM_DIR="/path/to/output" # default /tmp
+export GEOTWEET_STREAM_DIR="/path/to/output"
 # number of minutes for each log file
-env GEOTWEET_STREAM_LOG_INTERVAL=60  # default 60
+env GEOTWEET_STREAM_LOG_INTERVAL=60
 
 # get these from Twitter
 export TWITTER_CONSUMER_KEY="..."
@@ -49,7 +48,7 @@ The `geotweet/s3listener.py` script will begin listing to a directory for output
 You must set the following **environment variables**
 ```bash
 export GEOTWEET_LOG="/var/log/geotweet.log"
-export GEOTWEET_STREAM_DIR="/path/to/output" # default /tmp
+export GEOTWEET_STREAM_DIR="/path/to/output"
 
 # Get this from AWS 
 export AWS_ACCESS_KEY_ID="..."
