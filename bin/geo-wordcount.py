@@ -51,10 +51,7 @@ class MRGeoWordCount(MRJob):
                 mapper=self.mapper_word_count,
                 combiner=self.combiner_word_count,
                 reducer=self.reducer_word_count
-            )#,
-            #MRStep(
-            #    reducer=self.reducer_results
-            #)
+            )
         ]
     
     def mapper_geohash(self, _, line):
@@ -114,9 +111,6 @@ class MRGeoWordCount(MRJob):
             state = parts[1]
             county = parts[2]
         yield (word, state, county), total
-
-    def reducer_results(self, _, values):
-        pass
 
     def geo_lookup(self, m, lonlat):
         query = m.intersects(lonlat)
