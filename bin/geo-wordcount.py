@@ -14,7 +14,7 @@ sys.path.append(root)
 
 from geotweet.mongo import MongoQuery
 
-os.environ['GEOTWEET_MONGODB_URI'] = 'mongodb://159.203.247.4:27017'
+
 MONGODB_URI = os.getenv('GEOTWEET_MONGODB_URI', 'mongodb://127.0.0.1:27017')
 
 
