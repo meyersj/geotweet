@@ -1,6 +1,8 @@
 Geotweet
 ========
 
+MIT License. Copyright (c) 2016 Jeffrey Alan Meyers. See `LICENSE.md`
+
 
 This project contains scripts to retrieve tweets from the Twitter Streaming API and
 load into Amazon S3 Buckets. The intention is the use the tweets in S3 as input to 
