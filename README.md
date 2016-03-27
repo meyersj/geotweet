@@ -42,8 +42,8 @@ export AWS_ACCESS_KEY_ID="..."
 export AWS_SECRET_ACCESS_KEY="..."
 
 # you must create this bucket on S3
-export AWS_DEFAULT_REGION="us-west-2"
-export AWS_BUCKET="jeffrey.alan.meyers.geotweet"
+export AWS_DEFAULT_REGION="region" # example: "us-west-2"
+export AWS_BUCKET="already.created.bucket.name"
 ```
 
 
