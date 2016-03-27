@@ -15,8 +15,7 @@ as well as loading US states and routes GeoJSON into MongoDB.
 ```bash
 git clone https://github.com/meyersj/geotweet.git
 cd geotweet
-virtualenv env
-./env/bin/pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 
@@ -52,7 +51,7 @@ export AWS_BUCKET="already.created.bucket.name"
 Download osm data and extract POI nodes. Load each POI into MongoDB with
 spatial index.
 
-**Run**: `./env/bin/python bin/loader.py osm [states.txt]`
+**Run**: `python bin/loader.py osm [states.txt]`
 
 Optionally provide a list new line delimited US States.
 Defaults to `data/states.txt`
@@ -69,7 +68,7 @@ California
 Load US states and counties boundary geometry as GeoJSON documents
 into MongoDB.
 
-**Run**: `./env/bin/python bin/loader.py boundary`
+**Run**: `python bin/loader.py boundary`
 
 
 ### Twitter Stream
@@ -89,7 +88,7 @@ LOCATIONS = US
 
 The filtered tweets are stored into a log file as json.
 
-**Run**: `./env/bin/python bin/stream.py`
+**Run**: `python bin/stream.py`
 
 
 ### Amazon S3 Log Listener
@@ -100,7 +99,7 @@ file will be renamed with a timestamp to be archived. This script will listen fo
 that event and then upload the log file to a S3 bucket.
 
 
-**Run**: `./env/bin/python bin/s3listener.py`
+**Run**: `python bin/s3listener.py`
 
 
 ## Run as scripts as service on Ubuntu using upstart scripts
