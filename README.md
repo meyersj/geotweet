@@ -9,34 +9,38 @@ Elastic Map Reduce jobs.
 Also contains scripts to extract POI nodes from OSM data and load into MongoDB,
 as well as loading US states and routes GeoJSON into MongoDB.
 
-
-### Required Environment Variables
+### Environment Variables
 
 The following **environment variables** are required for all the scripts
 to run properly
 
 ```bash
-export GEOTWEET_LOG=/tmp/geotweet.log
-export GEOTWEET_STREAM_DIR=/tmp/geotweet
-export GEOTWEET_STREAM_LOG_INTERVAL=5   # number of minutes in each log file
-export GEOTWEET_MONGODB_URI="mongodb://127.0.0.1:27017"
+export GEOTWEET_LOG=/path/to/geotweet.log                 # optional default=/tmp/geotweet.log
+export GEOTWEET_STREAM_DIR=/path/to/output/dir            # optional default=/tmp/geotweet
+export GEOTWEET_MONGODB_URI="mongodb://127.0.0.1:27017"   # optional default=mongodb://127.0.0.1:27017
+
+# number of minutes in each log file
+export GEOTWEET_STREAM_LOG_INTERVAL=60                    # optional default=60  
+
 
 # get these from Twitter
-export TWITTER_CONSUMER_KEY="..."
-export TWITTER_CONSUMER_SECRET="..."
-export TWITTER_ACCESS_TOKEN_KEY="..."
-export TWITTER_ACCESS_TOKEN_SECRET="..."
+export TWITTER_CONSUMER_KEY="..."           # required
+export TWITTER_CONSUMER_SECRET="..."        # required
+export TWITTER_ACCESS_TOKEN_KEY="..."       # required
+export TWITTER_ACCESS_TOKEN_SECRET="..."    # required
 
 # get these from AWS
-export AWS_ACCESS_KEY_ID="..."
-export AWS_SECRET_ACCESS_KEY="..."
+export AWS_ACCESS_KEY_ID="..."              # required
+export AWS_SECRET_ACCESS_KEY="..."          # required
 
 # you must create this bucket on S3
-export AWS_DEFAULT_REGION="region" # example: "us-west-2"
-export AWS_BUCKET="already.created.bucket.name"
+export AWS_DEFAULT_REGION="region" # example: "us-west-2"   # required
+export AWS_BUCKET="already.created.bucket.name"             # required
 ```
 
 ### Build VM with MongoDB using Virtualbox
+
+Make sure you have Ubuntu 14.04 (`ubuntu/trusty64`) box installed.
 
 ```bash
 git clone https://github.com/meyersj/geotweet.git
@@ -51,8 +55,11 @@ Make sure all the required ***environment variables** are set and the run the sc
 vagrant ssh
 
 # load mongo
-python /vagrant/bin/loader.py osm /vagrant/data/states.txt # load OSM POI nodes
-python /vagrant/bin/loader.py boundary # load State and County GeoJSONs (takes a while)
+python /vagrant/bin/loader.py osm /vagrant/data/states.txt  # load OSM POI nodes
+python /vagrant/bin/loader.py boundary                      # load State and County GeoJSONs
+
+# run tests
+python /vagrant/tests/mongo_tests.py
 
 # Start Twitter-API stream
 python /vagrant/bin/streamer.py &
@@ -63,13 +70,11 @@ python /vagrant/bin/s3listener.py &
 
 ### Dependencies
 
-`osmosis` must be installed and on your path. [Link](http://wiki.openstreetmap.org/wiki/Osmosis)
+See `bin/setup.sh` for required dependencies:
++ `java` and `osmosis` must be installed and on your path. [Link](http://wiki.openstreetmap.org/wiki/Osmosis)
++ MongoDB needs to be installed
++ python `requirments.txt` need to be installed
 
-```bash
-git clone https://github.com/meyersj/geotweet.git
-cd geotweet
-pip install -r requirements.txt
-```
 
 ### Load OSM POI Data in MongoDB
 
