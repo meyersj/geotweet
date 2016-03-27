@@ -1,8 +1,18 @@
 import os
+import json
 
 from lxml.etree import iterparse
 import boto3
 
+
+class GeoJSONLoader(object):
+
+    def load(self, json_file, load_func):
+        with open(json_file, 'r') as f:
+            data = json.loads(f.read().decode('latin-1').encode('utf-8'))
+            for feature in data['features']:
+                load_func(feature)
+        
 
 class OSMLoader(object):
     """
@@ -16,8 +26,8 @@ class OSMLoader(object):
 
     def _build_data(self, elem):
         data = dict(elem.attrib)
-        data["tags"] = self._get_tags(elem)
-        data["loc"] = {
+        data["properties"] = self._get_tags(elem)
+        data["geometry"] = {
             "type":"Point",
             "coordinates":[float(data["lon"]), float(data["lat"])]
         }
