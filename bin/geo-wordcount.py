@@ -16,6 +16,7 @@ from geotweet.mongo import MongoQuery
 
 
 MONGODB_URI = os.getenv('GEOTWEET_MONGODB_URI', 'mongodb://127.0.0.1:27017')
+MIN_WORD_COUNT = 3 # ignore random strings
 
 
 def geohash_location(lonlat, precision=6):
@@ -100,6 +101,9 @@ class MRGeoWordCount(MRJob):
     
     def reducer_word_count(self, key, values):
         total = int(sum(values))
+        if total < MIN_WORD_COUNT:
+            return
+        
         parts = key.split('|')
         word = parts[0]
         state = ''
