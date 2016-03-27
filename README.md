@@ -55,8 +55,11 @@ Make sure all the required ***environment variables** are set and the run the sc
 vagrant ssh
 
 # load mongo
-python /vagrant/bin/loader.py osm /vagrant/data/states.txt # load OSM POI nodes
-python /vagrant/bin/loader.py boundary # load State and County GeoJSONs (takes a while)
+python /vagrant/bin/loader.py osm /vagrant/data/states.txt  # load OSM POI nodes
+python /vagrant/bin/loader.py boundary                      # load State and County GeoJSONs
+
+# run tests
+python /vagrant/tests/mongo_tests.py
 
 # Start Twitter-API stream
 python /vagrant/bin/streamer.py &
