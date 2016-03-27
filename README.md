@@ -52,7 +52,7 @@ export AWS_BUCKET="already.created.bucket.name"
 Download osm data and extract POI nodes. Load each POI into MongoDB with
 spatial index.
 
-**Run**: `./env/bin/python bin/loader.py` osm [states.txt]
+**Run**: `./env/bin/python bin/loader.py osm [states.txt]`
 
 Optionally provide a list new line delimited US States.
 Defaults to `data/states.txt`
@@ -69,7 +69,7 @@ California
 Load US states and counties boundary geometry as GeoJSON documents
 into MongoDB.
 
-**Run**: `./env/bin/python bin/loader.py` boundary
+**Run**: `./env/bin/python bin/loader.py boundary`
 
 
 ### Twitter Stream
