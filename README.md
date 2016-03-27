@@ -49,15 +49,25 @@ export AWS_BUCKET="already.created.bucket.name"
 
 ### Load OSM POI Data in MongoDB
 
-If you pass in a path to a list of new line delimited state names,
-those states will be used for download osm data and loading into MongoDB
+Download osm data and extract POI nodes. Load each POI into MongoDB with
+spatial index.
 
-**Run**: `./env/bin/python bin/loader.py` osm [states.txt default=data/states.txt]
+**Run**: `./env/bin/python bin/loader.py` osm [states.txt]
 
+Optionally provide a list new line delimited US States.
+Defaults to `data/states.txt`
+
+Example:
+```txt
+Oregon
+Washington
+California
+```
 
 ### Load State and County Boundary Data in MongoDB
 
-Load US states and counties GeoJSON documents into MongoDB.
+Load US states and counties boundary geometry as GeoJSON documents
+into MongoDB.
 
 **Run**: `./env/bin/python bin/loader.py` boundary
 
