@@ -1,5 +1,8 @@
+import os
+
 from pymongo import MongoClient
 
+from log import logger
 
 MONGODB_URI = os.getenv('GEOTWEET_MONGODB_URI', 'mongodb://127.0.0.1:27017')
 DB = "test"
@@ -11,6 +14,8 @@ class Mongo(object):
     """ Base wrapper class to connect to mongo and intialize a collection """
     
     def __init__(self, db=DB, uri=MONGODB_URI, collection=COLLECTION):
+        msg = "Setting up mongo client, uri={0}, db={1}, collection={2}"
+        logger.info(msg.format(uri, db, collection))
         self.client = MongoClient(uri)
         self.db = self.client[db]
         self.collection = self.db[collection]
