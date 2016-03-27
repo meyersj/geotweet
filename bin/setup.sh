@@ -5,7 +5,7 @@ set -e
 function dependencies {
     apt-get update
     apt-get install -y \
-        python-pip python-dev \
+        python-pip python-dev python-pyasn1 \
         libssl-dev \
         libxml2-dev libxslt1-dev \
         libffi-dev \
