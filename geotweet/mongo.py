@@ -36,7 +36,6 @@ class MongoQuery(Mongo):
     def point(self, coordinates):
         return dict(type="Point",coordinates=coordinates)
 
-
     def find(self, query=None):
         if query:
             return self.collection.find(query)
