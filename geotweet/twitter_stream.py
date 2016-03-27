@@ -1,38 +1,16 @@
 import os
 import sys
-import logging
 import json
-from logging.handlers import TimedRotatingFileHandler
 
 import twitter
 
 from log import logger, get_rotating_logger
 
 
-LOG_DIR = os.getenv("GEOTWEET_STREAM_DIR", "/tmp/geotweet")
 # Bounding Boxes
 # [Lon,Lat SW corner, Lon,Lat NE corner]
 PORTLAND = ["-123.784828,44.683842", "-121.651703,46.188969"]
-US = ["-125.0011,24.9493", "-66.9326,49.5904"]
-LOCATIONS = US
-INTERVAL = int(os.getenv("GEOTWEET_STREAM_LOG_INTERVAL", 60))
-
-try:
-    os.mkdir(LOG_DIR)
-except:
-    pass
-
-
-def main():
-    log = os.path.join(LOG_DIR, 'twitter-stream.log')
-    
-    logger.info("Starting Twitter Streaming API")
-    logger.info("Streaming to output log: {0}".format(log))
-    logger.info("Log Interval (min): {0}".format(INTERVAL))
-
-    handler = LogTweetHandler(log, interval=INTERVAL)
-    stream = TwitterStream()
-    stream.start(handler, locations=LOCATIONS)
+LOCATIONS = PORTLAND
 
 
 class TwitterClient(object):
@@ -96,7 +74,7 @@ class TwitterStream(object):
                 logger.error(value)
                 raise EnvironmentError(value)
     
-    def start(self, handler, locations=PORTLAND):
+    def start(self, handler, locations=LOCATIONS):
         try:
             for record in self.api.GetStreamFilter(locations=locations):
                 handler.handle(record)
@@ -150,7 +128,3 @@ class Tweet(object):
         print "GEO", self.lonlat
         print self.source
         print self.record['text']
-
-
-if __name__ == "__main__":
-    main()
