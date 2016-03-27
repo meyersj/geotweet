@@ -15,23 +15,22 @@ The following **environment variables** are required for all the scripts
 to run properly
 
 ```bash
-export GEOTWEET_LOG=/path/to/geotweet.log                 # optional default=/tmp/geotweet.log
-export GEOTWEET_STREAM_DIR=/path/to/output/dir            # optional default=/tmp/geotweet
-export GEOTWEET_MONGODB_URI="mongodb://127.0.0.1:27017"   # optional default=mongodb://127.0.0.1:27017
+export GEOTWEET_LOG=/path/to/geotweet.log                   # optional default=/tmp/geotweet.log
+export GEOTWEET_STREAM_DIR=/path/to/output/dir              # optional default=/tmp/geotweet
+export GEOTWEET_MONGODB_URI="mongodb://127.0.0.1:27017"     # optional default=mongodb://127.0.0.1:27017
 
 # number of minutes in each log file
-export GEOTWEET_STREAM_LOG_INTERVAL=60                    # optional default=60  
-
+export GEOTWEET_STREAM_LOG_INTERVAL=60                      # optional default=60  
 
 # get these from Twitter
-export TWITTER_CONSUMER_KEY="..."           # required
-export TWITTER_CONSUMER_SECRET="..."        # required
-export TWITTER_ACCESS_TOKEN_KEY="..."       # required
-export TWITTER_ACCESS_TOKEN_SECRET="..."    # required
+export TWITTER_CONSUMER_KEY="..."                           # required
+export TWITTER_CONSUMER_SECRET="..."                        # required
+export TWITTER_ACCESS_TOKEN_KEY="..."                       # required
+export TWITTER_ACCESS_TOKEN_SECRET="..."                    # required
 
 # get these from AWS
-export AWS_ACCESS_KEY_ID="..."              # required
-export AWS_SECRET_ACCESS_KEY="..."          # required
+export AWS_ACCESS_KEY_ID="..."                              # required
+export AWS_SECRET_ACCESS_KEY="..."                          # required
 
 # you must create this bucket on S3
 export AWS_DEFAULT_REGION="region" # example: "us-west-2"   # required
