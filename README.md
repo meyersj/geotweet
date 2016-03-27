@@ -78,7 +78,7 @@ python /vagrant/bin/s3listener.py &
 See `bin/setup.sh` for required dependencies:
 + `java` and `osmosis` must be installed and on your path. [Link](http://wiki.openstreetmap.org/wiki/Osmosis)
 + MongoDB needs to be installed
-+ python `requirments.txt` need to be installed
++ python `requirements.txt` need to be installed
 
 
 ### Load OSM POI Data in MongoDB
