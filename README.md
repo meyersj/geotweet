@@ -12,6 +12,8 @@ as well as loading US states and routes GeoJSON into MongoDB.
 
 ### Dependencies
 
+`osmosis` must be installed and on your path. [Link](http://wiki.openstreetmap.org/wiki/Osmosis)
+
 ```bash
 git clone https://github.com/meyersj/geotweet.git
 cd geotweet
