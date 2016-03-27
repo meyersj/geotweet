@@ -10,17 +10,6 @@ Also contains scripts to extract POI nodes from OSM data and load into MongoDB,
 as well as loading US states and routes GeoJSON into MongoDB.
 
 
-### Dependencies
-
-`osmosis` must be installed and on your path. [Link](http://wiki.openstreetmap.org/wiki/Osmosis)
-
-```bash
-git clone https://github.com/meyersj/geotweet.git
-cd geotweet
-pip install -r requirements.txt
-```
-
-
 ### Required Environment Variables
 
 The following **environment variables** are required for all the scripts
@@ -47,6 +36,40 @@ export AWS_DEFAULT_REGION="region" # example: "us-west-2"
 export AWS_BUCKET="already.created.bucket.name"
 ```
 
+### Build VM with MongoDB using Virtualbox
+
+```bash
+git clone https://github.com/meyersj/geotweet.git
+cd geotweet
+vagrant up
+```
+
+MongoDB should be accessible at `mongodb://127.0.0.1:27017`.
+Make sure all the required ***environment variables** are set and the run the scripts
+
+```
+vagrant ssh
+
+# load mongo
+python /vagrant/bin/loader.py osm /vagrant/data/states.txt # load OSM POI nodes
+python /vagrant/bin/loader.py boundary # load State and County GeoJSONs (takes a while)
+
+# Start Twitter-API stream
+python /vagrant/bin/streamer.py &
+
+# Listening for log files to load into S3
+python /vagrant/bin/s3listener.py &
+```
+
+### Dependencies
+
+`osmosis` must be installed and on your path. [Link](http://wiki.openstreetmap.org/wiki/Osmosis)
+
+```bash
+git clone https://github.com/meyersj/geotweet.git
+cd geotweet
+pip install -r requirements.txt
+```
 
 ### Load OSM POI Data in MongoDB
 
@@ -73,7 +96,7 @@ into MongoDB.
 **Run**: `python bin/loader.py boundary`
 
 
-### Twitter Stream
+### Twitter API Stream
 
 The script `bin/stream.py` will start the Twitter Streaming API and filter for
 tweets with coordinates inside a specified bounding box. The default is
