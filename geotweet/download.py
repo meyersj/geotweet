@@ -2,6 +2,8 @@ import os
 
 import requests
 
+from log import logger
+
 
 US_GEOFABRIK = 'http://download.geofabrik.de/north-america/us/{0}-latest.osm.pbf'
 
@@ -15,6 +17,10 @@ class Downloader(object):
     def build_url(self, state):
         return US_GEOFABRIK.format(state.replace(' ', '-').lower())
 
+    def get_filename(self, url):
+        filename = url.rsplit('/', 1)[-1]
+        return os.path.join('/tmp', filename)
+    
     def download(self, states_file):
         """ For each state in states file build url and download file """
         outfiles = []
@@ -26,10 +32,14 @@ class Downloader(object):
 
     def _download(self, url):
         """ Dowload file to /tmp """
-        filename = url.rsplit('/', 1)[-1]
-        tmp = os.path.join('/tmp', filename)
+        tmp = self.get_filename(url)
         with open(tmp, 'wb') as f:
             res = requests.get(url, stream=True)
             for block in res.iter_content(1024):
-                f.write(block)    
+                f.write(block)
+        if tmp and os.path.getsize(tmp) < 500:
+            error = "Small file: {0} bytes, Failed to download: {1}"
+            logger.error(error.format(os.path.getsize(tmp), url))
+            os.remove(tmp)
+            raise IOError
         return tmp
