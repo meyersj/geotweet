@@ -14,8 +14,28 @@ sys.path.append(root)
 
 from geotweet.mongo import MongoQuery
 
-
+os.environ['GEOTWEET_MONGODB_URI'] = 'mongodb://159.203.247.4:27017'
 MONGODB_URI = os.getenv('GEOTWEET_MONGODB_URI', 'mongodb://127.0.0.1:27017')
+
+
+def geohash_location(lonlat, precision=6):
+    """
+    Compute geohash from coordinates
+
+    https://en.wikipedia.org/wiki/Geohash
+
+    geohash
+    length  width   height
+    4       39.1km  19.5km
+    5       4.9km   4.9km
+    6       1.2km   609.4m
+    7       152.9m  152.4m
+    8       38.2m   19m
+    
+    """
+    lat = lonlat[1]
+    lon = lonlat[0]
+    return Geohash.encode(lat, lon, precision=precision)
 
 
 class MRGeoWordCount(MRJob):
@@ -23,88 +43,87 @@ class MRGeoWordCount(MRJob):
     def steps(self):
         return [
             MRStep(
-                mapper_init=self.mapper_init,
-                mapper=self.mapper_count,
-                mapper_final=self.mapper_final,
-                combiner=self.combiner_count,
-                reducer=self.reducer_count
+                mapper=self.mapper_geohash
             ),
             MRStep(
-                reducer=self.reducer_top
-            )
+                mapper_init=self.mapper_word_count_init,
+                mapper=self.mapper_word_count,
+                combiner=self.combiner_word_count,
+                reducer=self.reducer_word_count
+            )#,
+            #MRStep(
+            #    reducer=self.reducer_results
+            #)
         ]
-
-    def mapper_init(self):
-        kwargs = dict(uri=MONGODB_URI, db="boundary")
-        kwargs['collection'] ='states'
-        self.mongo_states = MongoQuery(**kwargs)
-        kwargs['collection'] = 'counties'
-        self.mongo_counties = MongoQuery(**kwargs)
-        self.geo_lookup_cache = {}
-        self.hit = 0
-        self.miss = 0
-
-    def mapper_count(self, _, line):
+    
+    def mapper_geohash(self, _, line):
         data = json.loads(line)
         # ignore HR geo-tweets for job postings
         if data['description'] and self.hr_filter(data['description']):
             return
-        
-        geohash = self.geohash(data, precision=6)
+        # convert coordinates to geohash
+        geohash = geohash_location(data['lonlat'], precision=6)
+        yield geohash, data['text']
+    
+    def mapper_word_count_init(self):
+        params = dict(uri=MONGODB_URI, db="boundary", collection="counties")
+        self.mongo = MongoQuery(**params)
+        self.geo_lookup_cache = {}
+        self.hit = 0
+        self.miss = 0
+    
+    def mapper_word_count(self, geohash, text):
+        # lookup state and county based on coordinates from tweet
         if geohash not in self.geo_lookup_cache:
+            # cache miss on geohash
             self.miss += 1
-            # lookup the county and state the tweet was from
-            # run word count for all words and for words in each state and county
-            #print data['text'], data['lonlat']
-            state = self.geo_lookup(self.mongo_states, data['lonlat'])
-            county = self.geo_lookup(self.mongo_counties, data['lonlat'])
+            coord = Geohash.decode(geohash)
+            lonlat = [float(coord[1]), float(coord[0])]
+            state, county = self.geo_lookup(self.mongo, lonlat)
             self.geo_lookup_cache[geohash] = (state, county)
         else:
+            # cache hit on geohash
             self.hit += 1
             state, county = self.geo_lookup_cache[geohash]
         
-        self.map_words(data['text'], state, county)
-    
-    def mapper_final(self):
-        print
-        print "HIT {0}".format(self.hit)
-        print "MISS {0}".format(self.miss)
-        print
-  
-    def map_words(self, text, state, county):
+        #print self.hit, self.miss
+        if not state or not county:
+            return
+        
         for word in re.findall('(\w+)', text):
             yield word, 1
-            if state: 
-                yield "{0}-{1}".format(word, state, word), 1
-                if county:
-                    yield "{0}-{1}-{2}".format(word, state, county), 1
-
-    def combiner_count(self, key, values):
+            yield "{0}|{1}".format(word, state), 1
+            yield "{0}|{1}|{2}".format(word, state, county), 1
+    
+    def combiner_word_count(self, key, values):
         yield key, sum(values)
     
-    def reducer_count(self, key, values):
-        yield None, (sum(values), key)
-        
-    def reducer_top(self, _, values):
-        heap = []
-        for value in values:
-            heapq.heappush(heap, value)
+    def reducer_word_count(self, key, values):
+        total = int(sum(values))
+        parts = key.split('|')
+        word = parts[0]
+        state = ''
+        county = ''
+        if len(parts) == 2:
+            state = parts[1]
+        elif len(parts) == 3:
+            state = parts[1]
+            county = parts[2]
+        yield (word, state, county), total
 
-        for value in heapq.nlargest(100, heap):
-            key = value[0].split('-')
-            word = key[0]
-            count = value[1]
-            yield word, count
-    
+    def reducer_results(self, _, values):
+        pass
+
     def geo_lookup(self, m, lonlat):
         query = m.intersects(lonlat)
+        ret = (None, None)
         try:
             match = m.find(query=query).next()
             if match:
-                return match['properties']['NAME']
+                ret = match['properties']['STATE'], match['properties']['COUNTY']
         except StopIteration:
-            return None
-        return None
+            pass
+        return ret
 
     def hr_filter(self, text):
         """ check if description of twitter using contains job related key words """
@@ -113,25 +132,6 @@ class MRGeoWordCount(MRJob):
         careers = "(career[s]?)"
         expr = "|".join([jobs, hiring, careers])
         return re.findall(expr, text)
-
-    def geohash(self, data, precision=6):
-        """
-        Compute geohash from coordinates
-    
-        https://en.wikipedia.org/wiki/Geohash
-    
-        geohash
-        length  width   height
-        4       39.1km  19.5km
-        5       4.9km   4.9km
-        6       1.2km   609.4m
-        7       152.9m  152.4m
-        8       38.2m   19m
-        
-        """
-        lat = data['lonlat'][1]
-        lon = data['lonlat'][0]
-        return Geohash.encode(lon, lat, precision=precision)
 
 
 if __name__ == '__main__':
