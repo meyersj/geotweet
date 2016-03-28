@@ -59,7 +59,7 @@ class MRGeoWordCount(MRJob):
         self.hit = 0
         self.miss = 0
 
-    def mapper(self, _, line):i
+    def mapper(self, _, line):
         data = json.loads(line)
         # ignore HR geo-tweets for job postings
         if data['description'] and self.hr_filter(data['description']):
