@@ -34,7 +34,7 @@ rotations and upload the archived file to an Amazon S3 Bucket.
 After log files have been collected for long enough run a Map Reduce
 job to count word occurences by each County, State and the entire US.
 
-+ `bin/us-state-county-wordcount-v2.py
++ `bin/us-state-county-wordcount-v2.py`
 
 
 ### Environment Variables
