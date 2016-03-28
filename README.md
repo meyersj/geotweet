@@ -14,7 +14,7 @@ load into Amazon S3 Buckets. The tweets in S3 are used as input for  Elastic Map
 Also contains scripts to extract POI nodes from OSM data and load into MongoDB,
 as well as loading US states and routes GeoJSON into MongoDB.
 
-### Pipeline
+### Data Pipeline
 
 Python script running as a daemon will connect to Twitter Streaming API and filter
 tweets inside bounding box of Continental US.
