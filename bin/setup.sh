@@ -6,6 +6,7 @@ function dependencies {
     apt-get update
     apt-get install -y \
         python-pip python-dev python-pyasn1 \
+        libgeos-dev libspatialindex-dev \
         libssl-dev \
         libxml2-dev libxslt1-dev \
         libffi-dev \
