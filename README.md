@@ -9,11 +9,33 @@ MIT License. Copyright (c) 2016 Jeffrey Alan Meyers. See `LICENSE.md`
 ### About
 
 This project contains scripts to retrieve tweets from the Twitter Streaming API and
-load into Amazon S3 Buckets. The intention is the use the tweets in S3 as input to 
-Elastic Map Reduce jobs.
+load into Amazon S3 Buckets. The tweets in S3 are used as input for  Elastic Map Reduce jobs.
 
 Also contains scripts to extract POI nodes from OSM data and load into MongoDB,
 as well as loading US states and routes GeoJSON into MongoDB.
+
+### Data Pipeline
+
+Python script running as a daemon will connect to Twitter Streaming API and filter
+tweets inside bounding box of Continental US.
+
+For each tweet (if actual Lat-Lon coordinates are included),
+extract and marshall some interesting fields as JSON and
+append to log file. Log files are rotated every 60 minutes.
+
++ [Streaming Endpoint](https://dev.twitter.com/streaming/reference/post/statuses/filter)
++ `bin/streamer.py`
+
+Another python script running as a daemon will listen for log file
+rotations and upload the archived file to an Amazon S3 Bucket.
+
++ Run: `bin/s3listener.py` (must set environment variables below)
+
+After log files have been collected for long enough run a Map Reduce
+job to count word occurences by each County, State and the entire US.
+
++ `bin/us-state-county-wordcount-v2.py
+
 
 ### Environment Variables
 
@@ -21,26 +43,30 @@ The following **environment variables** are required for all the scripts
 to run properly
 
 ```bash
+# ==== For `bin/streamer.py` and `bin/s3listener.py` ====
 export GEOTWEET_LOG=/path/to/geotweet.log                   # optional default=/tmp/geotweet.log
 export GEOTWEET_STREAM_DIR=/path/to/output/dir              # optional default=/tmp/geotweet
 export GEOTWEET_MONGODB_URI="mongodb://127.0.0.1:27017"     # optional default=mongodb://127.0.0.1:27017
-
 # number of minutes in each log file
 export GEOTWEET_STREAM_LOG_INTERVAL=60                      # optional default=60  
+# =======================================================
 
+# ==== For `bin/streamer.py` ====
 # get these from Twitter
 export TWITTER_CONSUMER_KEY="..."                           # required
 export TWITTER_CONSUMER_SECRET="..."                        # required
 export TWITTER_ACCESS_TOKEN_KEY="..."                       # required
 export TWITTER_ACCESS_TOKEN_SECRET="..."                    # required
+# ===============================
 
+# ==== For `bin/s3listener.py` ====
 # get these from AWS
 export AWS_ACCESS_KEY_ID="..."                              # required
 export AWS_SECRET_ACCESS_KEY="..."                          # required
-
 # you must create this bucket on S3
 export AWS_DEFAULT_REGION="region" # example: "us-west-2"   # required
 export AWS_BUCKET="already.created.bucket.name"             # required
+# =================================
 ```
 
 ### Build VM with MongoDB using Virtualbox
@@ -54,7 +80,7 @@ vagrant up
 ```
 
 MongoDB should be accessible at `mongodb://127.0.0.1:27017`.
-Make sure all the required ***environment variables** are set and the run the scripts
+Make sure all the required **environment variables** are set and the run the scripts
 
 ```
 vagrant ssh
@@ -76,7 +102,7 @@ python /vagrant/bin/s3listener.py &
 ### Dependencies
 
 See `bin/setup.sh` for required dependencies:
-+ `java` and `osmosis` must be installed and on your path. [Link](http://wiki.openstreetmap.org/wiki/Osmosis)
++ `java` and `osmosis` must be installed and on your path. [Osmosis Documentation](http://wiki.openstreetmap.org/wiki/Osmosis)
 + MongoDB needs to be installed
 + python `requirements.txt` need to be installed
 
