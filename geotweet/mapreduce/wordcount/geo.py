@@ -48,9 +48,6 @@ class MRGeoWordCount(MRJob):
     def steps(self):
         return [
             MRStep(
-                mapper=self.mapper_geohash
-            ),
-            MRStep(
                 mapper_init=self.mapper_init,
                 mapper=self.mapper,
                 combiner=self.combiner,
@@ -58,11 +55,13 @@ class MRGeoWordCount(MRJob):
             )
         ]
 
-    def mapper_geohash(self, _, line):
-        try:
-            data = json.loads(line)
-        except Exception as e:
-            return
+    def mapper_init(self):
+        """ Download counties geojson from S3 and build spatial index and cache """
+        self.counties = CountyLookup()
+        self.extractor = WordExtractor()
+    
+    def mapper(self, _, line):
+        data = json.loads(line)
         # ignore HR geo-tweets for job postings
         if data['description'] and self.hr_filter(data['description']):
             return
@@ -70,33 +69,21 @@ class MRGeoWordCount(MRJob):
         lat = data['lonlat'][1]
         lon = data['lonlat'][0]
         geohash = Geohash.encode(lat, lon, precision=GEOHASH_PRECISION)
-        yield geohash, data['text']
-   
-    def hr_filter(self, text):
-        """ check if description of twitter using contains job related key words """
-        expr = "|".join(["(job)", "(hiring)", "(career)"])
-        return re.findall(expr, text)
-
-    def mapper_init(self):
-        """ Download counties geojson from S3 and build spatial index and cache """
-        self.counties = CountyLookup()
-        self.extractor = WordExtractor()
-    
-    def mapper(self, geohash, text):
         # spatial lookup for state and county
         state, county = self.counties.get(geohash) 
         if not state or not county:
             return
         # count words
-        for word in self.extractor.run(text):
-            if word == "":
-                print word, state, county
-                raise Exception
-            
+        for word in self.extractor.run(data['text']):
             yield word, 1
             yield "{0}|{1}".format(word, state), 1
             yield "{0}|{1}|{2}".format(word, state, county), 1
-   
+    
+    def hr_filter(self, text):
+        """ check if description of twitter using contains job related key words """
+        expr = "|".join(["(job)", "(hiring)", "(career)"])
+        return re.findall(expr, text)
+  
     def combiner(self, key, values):
         yield key, sum(values)
     
@@ -112,7 +99,7 @@ class MRGeoWordCount(MRJob):
         if len(parts) == 3:
             state = parts[1]
             county = parts[2]
-        # output
+        # output results
         yield (parts[0], state, county), total
 
 
