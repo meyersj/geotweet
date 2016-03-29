@@ -55,7 +55,7 @@ job to count word occurences by each County, State and the entire US.
 + python `requirements.txt` need to be installed
 
 
-### Run as scripts as Daemon
+### Run Scripts as Daemon
 
 If running on Ubuntu you can set the environment variables in
 `example_conf/streamer.conf` and `example_conf/s3listener.conf`,
