@@ -14,6 +14,7 @@ from shapely.geometry.point import Point
 from rtree import index
 
 
+GEOHASH_PRECISION = 7
 """
 https://en.wikipedia.org/wiki/Geohash
 
@@ -24,12 +25,14 @@ precision   width   height
 6           1.2km   609.4m
 7           152.9m  152.4m
 8           38.2m   19m
-
 """
-GEOHASH_PRECISION = 6
-MIN_WORD_COUNT = 5 # ignore low occurences
+
+MIN_WORD_COUNT = 5      # ignore low occurences
+
+# Reference files to be downloaded from S3
 AWS_BUCKET = "https://s3-us-west-2.amazonaws.com/jeffrey.alan.meyers.bucket"
-COUNTIES_GEOJSON_URL = AWS_BUCKET + "/geotweet/us_counties.json"
+COUNTIES_GEOJSON_URL = os.path.join(AWS_BUCKET, "geotweet/us_counties.json")
+STOPWORDS_URL = os.path.join(AWS_BUCKET, "geotweet/stopwords.txt")
 
 
 class MRGeoWordCount(MRJob):
@@ -75,41 +78,24 @@ class MRGeoWordCount(MRJob):
         return re.findall(expr, text)
 
     def mapper_init(self):
-        """ Download counties geojson from S3 and build spatial index """
-        self.county_index = CountyIndex().build()
-        self.geo_lookup_cache = {}
-        self.hit = 0
-        self.miss = 0
-
+        """ Download counties geojson from S3 and build spatial index and cache """
+        self.counties = CountyLookup()
+        self.extractor = WordExtractor()
+    
     def mapper(self, geohash, text):
-        # spatial lookup state and county
-        state, county = self.geo_lookup(geohash) 
+        # spatial lookup for state and county
+        state, county = self.counties.get(geohash) 
         if not state or not county:
             return
         # count words
-        for word in re.findall('(\w+)', text.lower()):
+        for word in self.extractor.run(text):
+            if word == "":
+                print word, state, county
+                raise Exception
+            
             yield word, 1
             yield "{0}|{1}".format(word, state), 1
             yield "{0}|{1}|{2}".format(word, state, county), 1
-    
-    def geo_lookup(self, geohash):
-        """ lookup state and county based on geohash of coordinates from tweet """
-        state = county = None
-        if geohash not in self.geo_lookup_cache:
-            # cache miss on geohash
-            # lookup bounding box --> geometry
-            self.miss += 1
-            coord = Geohash.decode(geohash)
-            prop = self.county_index.search([float(coord[1]), float(coord[0])])
-            if prop:
-                state = prop['STATE']
-                county = prop['COUNTY']
-            self.geo_lookup_cache[geohash] = (state, county)
-        else:
-            # cache hit on geohash
-            self.hit += 1
-            state, county = self.geo_lookup_cache[geohash]
-        return (state, county)
    
     def combiner(self, key, values):
         yield key, sum(values)
@@ -130,9 +116,75 @@ class MRGeoWordCount(MRJob):
         yield (parts[0], state, county), total
 
 
-class CountyIndex(object):
-    """ Create an local spatial index of all counties in the US """
+class WordExtractor(object):
     
+    def __init__(self, stopwords=STOPWORDS_URL):
+        self.sub_all = re.compile("""[#.!?,"(){}[\]|]|&amp;""")
+        self.sub_ends = re.compile("""^[@\\\/~]*|[\\\/:~]*$""")
+        self.stopwords = {}
+        if stopwords:
+            words = self.download(stopwords)
+            for word in words.splitlines():
+                    self.stopwords[word] = ""
+    
+    def download(self, url):
+        """ Download stopwords.txt file from url (S3 bucket) """
+        response = urllib2.urlopen(url)
+        return response.read()
+
+    def clean_unicode(self, line):
+        chars = [char for char in line.lower()]
+        only_ascii = lambda char: char if ord(char) < 128 else ''
+        return str(''.join(filter(only_ascii, chars)))
+
+    def clean_punctuation(self, word):
+        return self.sub_ends.sub('', self.sub_all.sub('', word))
+
+    def run(self, line):
+        """
+        Extract words from tweet
+
+        1. Remove non-ascii characters
+        2. Split line into individual words
+        3. Clean up puncuation characters
+        
+        """
+        words = []
+        for word in self.clean_unicode(line.lower()).split():
+            if word.startswith('http'):
+                continue
+            cleaned = self.clean_punctuation(word)
+            if len(cleaned) > 1 and cleaned not in self.stopwords:
+                words.append(cleaned)
+        return words
+
+
+class CountyLookup(object):
+    """ Dowload counties geojson, build index and provide lookup functionality """
+    
+    def __init__(self):
+        self.index = CountySpatialIndex().build()
+        self.geohash_cache = {}
+   
+    def get(self, geohash):
+        """ lookup state and county based on geohash of coordinates from tweet """
+        if geohash in self.geohash_cache:
+            # cache hit on geohash
+            return self.geohash_cache[geohash]
+        # cache miss on geohash
+        state = county = None
+        coord = Geohash.decode(geohash)
+        prop = self.index.get([float(coord[1]), float(coord[0])])
+        if prop:
+            state = prop['STATE']
+            county = prop['COUNTY']
+        self.geohash_cache[geohash] = (state, county)
+        return state, county
+
+
+class CountySpatialIndex(object):
+    """ Create an local spatial index of all counties in the US """
+ 
     def build(self, url=COUNTIES_GEOJSON_URL):
         """ Build a RTree index using bounding box of each US county """
         self.idx = index.Index()
@@ -161,7 +213,7 @@ class CountyIndex(object):
         self.idx.insert(key, feature['geometry'].bounds)
         self.data[key] = feature
 
-    def search(self, point):
+    def get(self, point):
         """ lookup county based on point as [longitude, latitude] """
         # first search bounding boxes
         for i in self.idx.intersection(point):
