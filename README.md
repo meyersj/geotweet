@@ -22,9 +22,9 @@ Python script running as a daemon will connect to [Twitter Streaming API)]
 (https://dev.twitter.com/streaming/reference/post/statuses/filter)
 and filter for tweets inside Continental US.
 
-+ `bin/streamer.py`
-+ `example_conf/streamer_envvars.sh`      # required environment variables to run `streamer.py`
-+ `example_conf/streamer.conf`            # Upstart script to run as Daemon on Ubuntu
++ `python bin/streamer.py`
++ See `example_conf/streamer_envvars.sh`. Required environment variables to run `streamer.py`
++ See `example_conf/streamer.conf`. Upstart script to run as Daemon on Ubuntu
 
 For each tweet (if actual Lat-Lon coordinates are included),
 extract and marshal some fields as JSON and append to log file.
@@ -35,9 +35,9 @@ Log files are rotated every 60 minutes.
 Another python script running as a daemon will listen for log file
 rotations and upload the archived file to an Amazon S3 Bucket.
 
-+ `bin/s3listener.py`
-+ `example_conf/s3listener_envvars.sh`    # required environment variables to run `s3listener.py`
-+ `example_conf/s3listener.conf`          # Upstart script to run as Daemon on Ubuntu
++ `python bin/s3listener.py`
++ See `example_conf/s3listener_envvars.sh` for the required environment variables to run `s3listener.py`
++ See `example_conf/s3listener.conf` for an Upstart script to run as Daemon on Ubuntu
 
 
 #### 3. Process with EMR
@@ -45,9 +45,9 @@ rotations and upload the archived file to an Amazon S3 Bucket.
 After log files have been collected for long enough run a Map Reduce
 job to count word occurences by each County, State and the entire US.
 
-+ `geotweet/mapreduce/wordcount/geo.py`   # Map Reduce job
-+ `bin/mapreduce_runner.py`               # Example runner for local and EMR
-+ `example_conf/mrjob.conf`               # Config to run on EMR
++ See `geotweet/mapreduce/wordcount/geo.py` for GeoWordCount map reduce job
++ See `bin/mapreduce_runner.sh` for an example of running local and EMR jobs
++ See `example_conf/mrjob.conf` for config required to run an EMR job
 
 
 ### Dependencies
@@ -70,7 +70,7 @@ sudo service s3listener start
 
 ### Build VM with MongoDB using Virtualbox
 
-Make sure you have Ubuntu 14.04 (`ubuntu/trusty64`) box installed.
+Make sure you have the Ubuntu 14.04 (`ubuntu/trusty64`) vagrant box installed.
 
 ```bash
 git clone https://github.com/meyersj/geotweet.git
@@ -84,18 +84,14 @@ Make sure all the required **environment variables** are set and the run the scr
 ```
 vagrant ssh
 
-# load mongo
+# load mongo with geo data
 python /vagrant/bin/loader.py osm /vagrant/data/states.txt  # load OSM POI nodes
 python /vagrant/bin/loader.py boundary                      # load State and County GeoJSONs
 
 # run tests
+python /vagrant/tests/download_tests.py
+python /vagrant/tests/extract_tests.py
 python /vagrant/tests/mongo_tests.py
-
-# Start Twitter-API stream
-python /vagrant/bin/streamer.py &
-
-# Listening for log files to load into S3
-python /vagrant/bin/s3listener.py &
 ```
 
 ### Load Geographic Data into MongoDB (Retired)
