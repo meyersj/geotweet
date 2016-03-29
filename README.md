@@ -16,26 +16,29 @@ as well as loading US states and routes GeoJSON into MongoDB.
 
 ### Data Pipeline
 
-Python script running as a daemon will connect to Twitter Streaming API and filter
-tweets inside bounding box of Continental US.
+Python script running as a daemon will connect to [Twitter Streaming API)]
+(https://dev.twitter.com/streaming/reference/post/statuses/filter)
+and filter for tweets inside Continental US.
+
++ `bin/streamer.py`
++ `example_conf/geotweet.conf`
 
 For each tweet (if actual Lat-Lon coordinates are included),
-extract and marshall some interesting fields as JSON and
-append to log file. Log files are rotated every 60 minutes.
-
-+ [Streaming Endpoint](https://dev.twitter.com/streaming/reference/post/statuses/filter)
-+ `bin/streamer.py`
+extract and marshal some fields as JSON and append to log file.
+Log files are rotated every 60 minutes.
 
 Another python script running as a daemon will listen for log file
 rotations and upload the archived file to an Amazon S3 Bucket.
 
-+ Run: `bin/s3listener.py` (must set environment variables below)
++ `bin/s3listener.py`
++ `example_conf/s3listener.conf`
 
 After log files have been collected for long enough run a Map Reduce
 job to count word occurences by each County, State and the entire US.
 
-+ `bin/us-state-county-wordcount-v2.py`
-
++ `bin/mapreduce_runner.py`
++ `geotweet/mapreduce/wordcount/geo.py`
++ `example_conf/mrjob.conf`
 
 ### Environment Variables
 
