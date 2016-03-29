@@ -33,6 +33,8 @@ class ExtractorTests(unittest.TestCase):
         res = self.ex._extract(self.source, self.target)
         error = "Error: Extractor._extract returned False, Source: {0}, Target: {1}"
         self.assertTrue(res, error.format(self.source, self.target))
+        error = "Error: output file {0} does not exist".format(self.target)
+        self.assertTrue(os.path.isfile(self.target), error)
         self.clear_tmp(self.target)
 
 
