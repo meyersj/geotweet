@@ -94,7 +94,7 @@ python /vagrant/tests/extract_tests.py
 python /vagrant/tests/mongo_tests.py
 ```
 
-### Load Geographic Data into MongoDB (Retired)
+### RETIRED - Load Geographic Data into MongoDB
 
 #### Load OSM POI Data in MongoDB
 
