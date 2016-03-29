@@ -27,7 +27,7 @@ precision   width   height
 
 """
 GEOHASH_PRECISION = 6
-MIN_WORD_COUNT = 3 # ignore random strings
+MIN_WORD_COUNT = 5 # ignore low occurences
 AWS_BUCKET = "https://s3-us-west-2.amazonaws.com/jeffrey.alan.meyers.bucket"
 COUNTIES_GEOJSON_URL = AWS_BUCKET + "/geotweet/us_counties.json"
 
@@ -41,9 +41,12 @@ class MRGeoWordCount(MRJob):
     State and County for each tweet.
     
     """
-    
+
     def steps(self):
         return [
+            MRStep(
+                mapper=self.mapper_geohash
+            ),
             MRStep(
                 mapper_init=self.mapper_init,
                 mapper=self.mapper,
@@ -51,16 +54,12 @@ class MRGeoWordCount(MRJob):
                 reducer=self.reducer
             )
         ]
-            
-    def mapper_init(self):
-        """ Download counties geojson from S3 and build spatial index """
-        self.county_index = CountyIndex().build()
-        self.geo_lookup_cache = {}
-        self.hit = 0
-        self.miss = 0
 
-    def mapper(self, _, line):
-        data = json.loads(line)
+    def mapper_geohash(self, _, line):
+        try:
+            data = json.loads(line)
+        except Exception as e:
+            return
         # ignore HR geo-tweets for job postings
         if data['description'] and self.hr_filter(data['description']):
             return
@@ -68,22 +67,55 @@ class MRGeoWordCount(MRJob):
         lat = data['lonlat'][1]
         lon = data['lonlat'][0]
         geohash = Geohash.encode(lat, lon, precision=GEOHASH_PRECISION)
+        yield geohash, data['text']
+   
+    def hr_filter(self, text):
+        """ check if description of twitter using contains job related key words """
+        expr = "|".join(["(job)", "(hiring)", "(career)"])
+        return re.findall(expr, text)
+
+    def mapper_init(self):
+        """ Download counties geojson from S3 and build spatial index """
+        self.county_index = CountyIndex().build()
+        self.geo_lookup_cache = {}
+        self.hit = 0
+        self.miss = 0
+
+    def mapper(self, geohash, text):
         # spatial lookup state and county
         state, county = self.geo_lookup(geohash) 
         if not state or not county:
             return
         # count words
-        for word in re.findall('(\w+)', data['text']):
+        for word in re.findall('(\w+)', text.lower()):
             yield word, 1
             yield "{0}|{1}".format(word, state), 1
             yield "{0}|{1}|{2}".format(word, state, county), 1
     
+    def geo_lookup(self, geohash):
+        """ lookup state and county based on geohash of coordinates from tweet """
+        state = county = None
+        if geohash not in self.geo_lookup_cache:
+            # cache miss on geohash
+            # lookup bounding box --> geometry
+            self.miss += 1
+            coord = Geohash.decode(geohash)
+            prop = self.county_index.search([float(coord[1]), float(coord[0])])
+            if prop:
+                state = prop['STATE']
+                county = prop['COUNTY']
+            self.geo_lookup_cache[geohash] = (state, county)
+        else:
+            # cache hit on geohash
+            self.hit += 1
+            state, county = self.geo_lookup_cache[geohash]
+        return (state, county)
+   
     def combiner(self, key, values):
         yield key, sum(values)
     
     def reducer(self, key, values):
         total = int(sum(values))
-        # ignore if count of occurences is below threshold
         if total < MIN_WORD_COUNT:
             return
         # parse key of the form ('word', 'word|state', 'word|state|county')
@@ -96,29 +128,6 @@ class MRGeoWordCount(MRJob):
             county = parts[2]
         # output
         yield (parts[0], state, county), total
-
-    def geo_lookup(self, geohash):
-        """ lookup state and county based on geohash of coordinates from tweet """
-        state = county = None
-        if geohash not in self.geo_lookup_cache:
-            # cache miss on geohash
-            self.miss += 1
-            coord = Geohash.decode(geohash)
-            county = self.county_index.search([float(coord[1]), float(coord[0])])
-            if county:
-                state = county['STATE']
-                county = county['COUNTY']
-            self.geo_lookup_cache[geohash] = (state, county)
-        else:
-            # cache hit on geohash
-            self.hit += 1
-            state, county = self.geo_lookup_cache[geohash]
-        return (state, county)
-
-    def hr_filter(self, text):
-        """ check if description of twitter using contains job related key words """
-        expr = "|".join(["(job)", "(hiring)", "(career)"])
-        return re.findall(expr, text)
 
 
 class CountyIndex(object):
