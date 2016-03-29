@@ -13,8 +13,8 @@ class ExtractorTests(unittest.TestCase):
 
     def setUp(self):
         self.ex = Extractor()
-        self.source = os.path.join(root, 'data/rhode-island-latest.osm.pbf')
-        self.target = os.path.join(root, 'data/.tmp-rhode-island-latest.osm')
+        self.source = os.path.join(root, 'data/osm/rhode-island-latest.osm.pbf')
+        self.target = os.path.join(root, 'data/osm/.tmp-rhode-island-latest.osm')
 
     def clear_tmp(self, tmp):
         try:
