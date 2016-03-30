@@ -42,7 +42,7 @@ The log files are rotated every 60 minutes.
 ```bash
 cat example_conf/streamer_envvars.sh >> ~/.bashrc
 vim ~/.bashrc
-# set all thee environment variables
+# set all of the environment variables
 source ~/.bashrc
 python bin/streamer.py
 ```
@@ -51,7 +51,7 @@ python bin/streamer.py
 ```bash
 sudo cp example_conf/streamer.conf /etc/init/
 sudo vim /etc/init/streamer.conf
-# set all thee environment variables
+# set all of the environment variables
 sudo service streamer start
 ```
 
@@ -60,10 +60,22 @@ sudo service streamer start
 Another python script will be listening for the `streamer.py` log file rotations.
 Each archived file will be uploaded into an Amazon S3 Bucket.
 
-+ `python bin/s3listener.py`
-+ See `example_conf/s3listener_envvars.sh` for the required environment variables to run `s3listener.py`
-+ See `example_conf/s3listener.conf` for an Upstart script to run as Daemon on Ubuntu
+**Run**
+```bash
+cat example_conf/s3listener_envvars.sh >> ~/.bashrc
+vim ~/.bashrc
+# set all of the environment variables
+source ~/.bashrc
+python bin/s3listener.py
+```
 
+**Run as Daemon using Upstart**
+```bash
+sudo cp example_conf/s3listener.conf /etc/init/
+sudo vim /etc/init/s3listener.conf
+# set all of the environment variables
+sudo service s3listener start
+```
 
 #### 3. Process with EMR **(Batch)**
 
@@ -74,22 +86,25 @@ job to count word occurences by each County, State and the entire US.
 + See `bin/mapreduce_runner.sh` for an example of running local and EMR jobs
 + See `example_conf/mrjob.conf` for config required to run an EMR job
 
+**Local**
+```bash
+cd geotweet/mapreduce/wordcount
 
-
-
-
-### Run Scripts as Daemon
-
-If running on Ubuntu you can set the **environment variables** in
-`example_conf/streamer.conf` and `example_conf/s3listener.conf`,
-and copy those files to `/etc/init/`
-
-To start them as a service run:
-```
-sudo service streamer start
-sudo service s3listener start
+# run geo wordcount job with sample data
+python geo.py ../../../data/mapreduce/twitter-stream.log.2016-03-26_13-13
 ```
 
+**EMR**
+```bash
+cp example_conf/mrjob.conf ~/.mrjob.conf
+vim ~/.mrjob.conf
+# set all of the config parameters
+# make sure all example paths are corrected
+cd geotweet/mapreduce/wordcount
+src=s3://some.s3.bucket/input                               # folder containing logs from `streamer.py`
+dst=s3://some.s3.bucket/output/<new folder>                 # the new folder should not already exist
+python geo.py $src -r emr --output-dir=$dst --no-output     # supress output to stdout (will go to s3)   
+```
 
 ### Load Geographic Data into MongoDB
 
