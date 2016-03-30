@@ -69,7 +69,7 @@ sudo service s3listener start
 ```
 
 
-### RETIRED: Load Geographic Data into MongoDB
+### Load Geographic Data into MongoDB
 
 #### Build VM with MongoDB using Virtualbox
 
