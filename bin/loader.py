@@ -48,7 +48,7 @@ def main(args):
                 logger.info(log.format(sys.argv[2]))
                 osm_runner(source=sys.argv[2], batch=True)
             else:
-                log = "Using default states list at: < {0} >"
+                log = "Using Default States: < {0} >"
                 logger.info(log.format(DEFAULT_STATES))
                 osm_runner(source=DEFAULT_STATES, batch=True)
         elif cmd == "boundary":
