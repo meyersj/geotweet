@@ -11,19 +11,21 @@ from geotweet.download import Downloader
 from geotweet.extract import Extractor
 from geotweet.load import OSMLoader, GeoJSONLoader
 from geotweet.mongo import MongoGeo
-from geotweet.log import logger
+from geotweet.log import logger, LOG_FILE
 
 
 parentdir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+DATA_DIR = os.path.join(parentdir, 'data')
 
-TEST_LOCAL_PBF = os.path.join(DATA_DIR, "rhode-island-latest.osm.pbf")
+
+TEST_LOCAL_PBF = os.path.join(DATA_DIR, "osm/rhode-island-latest.osm.pbf")
 DEFAULT_PBF = 'http://download.geofabrik.de/north-america/us/rhode-island.osm.pbf'
 MONGODB_URI = os.getenv('GEOTWEET_MONGODB_URI', 'mongodb://127.0.0.1:27017')
 
 DEFAULT_POI_TAGS = ['amenity', 'builing', 'shop', 'office', 'tourism']
-DATA_DIR = os.path.join(parentdir, 'data')
 DEFAULT_OUT_DIR = os.path.join(parentdir, 'output/poi')
-DEFAULT_STATES = os.path.join(DATA_DIR, 'states.txt')
+DEFAULT_STATES = os.path.join(DATA_DIR, 'states/states.txt')
+
 
 
 def main(args):
@@ -35,19 +37,27 @@ def main(args):
     """
     
     usage = "Usage: python loader.py [osm|boundary] [/path/to/states.txt]"
-
+    logger.info("Log file location: < {0} >".format(LOG_FILE))
     if len(args) >= 2:
         cmd = args[1]
+        logger.info("Command: < {0} >".format(cmd))
         if cmd == "osm":
             if len(args) >= 3:
                 # download states listed in file passed as parameter
+                log = "Using user provided states list at: < {0} >"
+                logger.info(log.format(sys.argv[2]))
                 osm_runner(source=sys.argv[2], batch=True)
             else:
+                log = "Using default states list at: < {0} >"
+                logger.info(log.format(DEFAULT_STATES))
                 osm_runner(source=DEFAULT_STATES, batch=True)
         elif cmd == "boundary":
             boundary_runner()
         else:
+            logger.error("invalid command < {0} >".format(cmd))
             print usage
+    else:
+        print usage
 
 
 def osm_runner(source=DEFAULT_PBF, outdir=DEFAULT_OUT_DIR, batch=False):
@@ -55,38 +65,25 @@ def osm_runner(source=DEFAULT_PBF, outdir=DEFAULT_OUT_DIR, batch=False):
     Top level runner to download osm data, extract POI nodes and load into mongodb
 
     """
-    logger.info("Starting osm runner")
+    logger.info("Starting OSM POI nodes Mongo DB loading process.")
     logger.info("batch={0}".format(batch))
-    logger.info("outdir={0}".format(source))
+    logger.info("outdir={0}".format(outdir))
     logger.info("source={0}".format(source))
-    
-    logger.info("Start data download from Geofabrik")
     downloaded = download_osm_data(source, batch=batch)
-    logger.info("Finished downloading data")
-
-    logger.info("Cleaning output directory {0}".format(outdir))
     prepare_output_directory(outdir)
-    
-    downloaded = [TEST_LOCAL_PBF]
-    
     poi_files = extract_points_of_interest(downloaded, outdir)
-    logger.info("poi files that were extracted: {0}".format(poi_files))
-    
-    logger.info("Loading POI Files into mongo: {0}".format(MONGODB_URI))
     load_osm_mongo(poi_files)
-    logger.info("Finished Loading POI Files")
+    logger.info("Finished loading OSM POI nodes into Mongo DB")
 
 
 def boundary_runner():
-    data = os.path.join(DATA_DIR, 'us_states.json')
-    logger.info("Loading GeoJSON into mongodb: {0}".format(data))
-    load_geo_mongo('states', data)
-
-    data = os.path.join(DATA_DIR, 'us_counties.json')
-    logger.info("Loading GeoJSON into mongodb: {0}".format(data)) 
-    load_geo_mongo('counties', data)
-
-    logger.info("Finished loading state and county boundary files")
+    """ Top level runner to load State and County  GeoJSON files into Mongo DB """
+    logger.info("Starting States and Counties GeoJSON MongoDB DB loading process.")
+    states = os.path.join(DATA_DIR, 'us_states.json')
+    counties = os.path.join(DATA_DIR, 'us_counties.json')
+    load_geo_mongo('states', states)
+    load_geo_mongo('counties', counties)
+    logger.info("Finished loading State and County data into Mongo DB.")
 
 
 def prepare_output_directory(outdir):
@@ -94,6 +91,7 @@ def prepare_output_directory(outdir):
     Clear output directory and create if does not exist 
     
     """
+    logger.info("Cleaning output directory < {0} >".format(outdir))
     try:
         shutil.rmtree(outdir, ignore_errors=True)
     except Exception as e:
@@ -117,10 +115,11 @@ def download_osm_data(source, batch=False):
     @return Return list of paths to each file that was downloaded
     
     """
+    log = "Start data download from Geofabrik. source={0} batch={1}"
+    logger.info(log.format(source, batch))
     # validate if source file containing state names exists when running in batch mode
     if batch and not os.path.isfile(source):
         raise ValueError("state list file < {0} > does not exist".format(source))
-
     dl = Downloader()
     if batch:
         # download states listed in source file
@@ -139,6 +138,8 @@ def extract_points_of_interest(pbf_extracts, outdir):
     @return Returns list of files containing POI nodes
     
     """
+    log = "Extract POI nodes from downloaded pfb extracts to < {0} >"
+    logger.info(log.format(outdir))
     poi_files = Extractor(tags=DEFAULT_POI_TAGS).extract(pbf_extracts, outdir)
     return poi_files
 
@@ -151,6 +152,8 @@ def load_osm_mongo(poi_files, mongo_uri=MONGODB_URI):
     @param mongo_uri string: [Mongo uri default='mongodb://127.0.0.1:27017']
 
     """
+    logger.info("Mongo URI < {0} >".format(mongo_uri))
+    logger.info("POI Files to be loaded < {0} >".format(poi_files))
     mongo = MongoGeo(db='osm', collection='poi', uri=mongo_uri)
     OSMLoader().load(poi_files, mongo.insert)  
 
@@ -163,6 +166,8 @@ def load_geo_mongo(collection, json_file, uri=MONGODB_URI):
     @param json_file string: Path to json file
 
     """
+    log = "Loading GeoJSON < {0} > into mongodb collection < {1} >"
+    logger.info(log.format(data))
     mongo = MongoGeo(db='boundary', collection=collection, uri=uri)
     GeoJSONLoader().load(json_file, mongo.insert)  
 
