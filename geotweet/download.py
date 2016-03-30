@@ -1,4 +1,5 @@
 import os
+import re
 
 import requests
 
@@ -35,14 +36,15 @@ class Downloader(object):
     def _download(self, url):
         """ Dowload file to /tmp """
         tmp = self.get_filename(url)
-        with open(tmp, 'wb') as f:
-            res = requests.get(url, stream=True)
-            for block in res.iter_content(1024):
-                f.write(block)
-        if tmp and os.path.getsize(tmp) < 500:
-            error = "Small file: < {0} bytes > Failed to download: < {1} >"
-            error += "\nYou may have exceeded GeoFabriks ratelimit"
-            logger.error(error.format(os.path.getsize(tmp), url))
+        f = open(tmp, 'wb')
+        res = requests.get(url, stream=True)
+        if res.status_code != 200:
+            # failed to download, cleanup and raise exception
+            f.close()
             os.remove(tmp)
-            raise IOError
+            error = "{0}\n\nFailed to download < {0} >".format(res.content, url)
+            raise IOError(error)
+        for block in res.iter_content(1024):
+            f.write(block)
+        f.close()
         return tmp
