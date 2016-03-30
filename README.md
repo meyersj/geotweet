@@ -32,7 +32,7 @@ You can try just installing the pip `requirements.txt` and see what fails.
 Then see what else fails when you try to run specific scripts.
 ```bash
 sudo apt-get install \
-    python-pip python-dev \
+    git python-pip python-dev \
     libgeos-dev libspatialindex-dev \       # for shapely and Rtree
     python-pyasn1 libssl-dev libffi-dev \   # to supress ssl warnings 
     libxml2-dev libxslt1-dev \              # for reading OSM data
