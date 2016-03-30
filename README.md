@@ -8,39 +8,40 @@ MIT License. Copyright (c) 2016 Jeffrey Alan Meyers. See `LICENSE.md`
 
 ### About
 
-This project contains scripts to retrieve tweets from the Twitter Streaming API and
-load into Amazon S3 Buckets. The tweets in S3 are used as input for  Elastic Map Reduce jobs.
+This project contains python scripts to log tweets from the
+[Twitter Streaming API](https://dev.twitter.com/streaming/reference/post/statuses/filter)
+and load them into Amazon S3 Buckets.
+The log files in S3 are then used as input for Elastic Map Reduce jobs.
 
-Also contains scripts to extract POI nodes from OSM data and load into MongoDB,
-as well as loading US states and routes GeoJSON into MongoDB.
+Also contains some *(retired)* scripts to extract POI nodes from OSM data and
+load into MongoDB, as well as loading US states and routes GeoJSON into MongoDB.
 
 ### Data Pipeline
 
-#### 1. Extract Geographic Tweets
+#### 1. Extract Geographic Tweets **(Daemon)**
 
-Python script running as a daemon will connect to [Twitter Streaming API)]
-(https://dev.twitter.com/streaming/reference/post/statuses/filter)
-and filter for tweets inside Continental US.
+Python script running on a cheap VPS (DigitalOcean) will connect to the
+*Twitter Streaming API* and filter for tweets inside Continental US.
+
+For each tweet (if Lat-Lon coordinates are provided),
+extract fields, marshal as JSON and append to a log file.
+The log files are rotated every 60 minutes.
 
 + `python bin/streamer.py`
 + See `example_conf/streamer_envvars.sh`. Required environment variables to run `streamer.py`
 + See `example_conf/streamer.conf`. Upstart script to run as Daemon on Ubuntu
 
-For each tweet (if actual Lat-Lon coordinates are included),
-extract and marshal some fields as JSON and append to log file.
-Log files are rotated every 60 minutes.
+#### 2. Load Tweets into S3 **(Daemon)**
 
-#### 2. Load Tweets into S3
-
-Another python script running as a daemon will listen for log file
-rotations and upload the archived file to an Amazon S3 Bucket.
+Another python script will be listening for the `streamer.py` log file rotations.
+Each archived file will be uploaded into an Amazon S3 Bucket.
 
 + `python bin/s3listener.py`
 + See `example_conf/s3listener_envvars.sh` for the required environment variables to run `s3listener.py`
 + See `example_conf/s3listener.conf` for an Upstart script to run as Daemon on Ubuntu
 
 
-#### 3. Process with EMR
+#### 3. Process with EMR **(Batch)**
 
 After log files have been collected for long enough run a Map Reduce
 job to count word occurences by each County, State and the entire US.
@@ -57,7 +58,7 @@ job to count word occurences by each County, State and the entire US.
 
 ### Run Scripts as Daemon
 
-If running on Ubuntu you can set the environment variables in
+If running on Ubuntu you can set the **environment variables** in
 `example_conf/streamer.conf` and `example_conf/s3listener.conf`,
 and copy those files to `/etc/init/`
 
@@ -68,7 +69,9 @@ sudo service s3listener start
 ```
 
 
-### Build VM with MongoDB using Virtualbox
+### RETIRED: Load Geographic Data into MongoDB
+
+#### Build VM with MongoDB using Virtualbox
 
 Make sure you have the Ubuntu 14.04 (`ubuntu/trusty64`) vagrant box installed.
 
@@ -78,23 +81,17 @@ cd geotweet
 vagrant up
 ```
 
-MongoDB should be accessible at `mongodb://127.0.0.1:27017`.
-Make sure all the required **environment variables** are set and the run the scripts
+If everything worked, MongoDB should be accessible at
+`mongodb://127.0.0.1:27017`.
 
 ```
 vagrant ssh
 
 # load mongo with geo data
-python /vagrant/bin/loader.py osm /vagrant/data/states.txt  # load OSM POI nodes
-python /vagrant/bin/loader.py boundary                      # load State and County GeoJSONs
-
-# run tests
-python /vagrant/tests/download_tests.py
-python /vagrant/tests/extract_tests.py
-python /vagrant/tests/mongo_tests.py
+cd /vagrant/bin
+python loader.py osm /vagrant/data/states.txt   # load OSM POI nodes
+python loader.py boundary                       # load State and County GeoJSONs
 ```
-
-### RETIRED - Load Geographic Data into MongoDB
 
 #### Load OSM POI Data in MongoDB
 
