@@ -1,5 +1,6 @@
 import os
 
+import pymongo
 from pymongo import MongoClient
 
 from log import logger
@@ -21,7 +22,11 @@ class Mongo(object):
         self.collection = self.db[collection]
 
     def insert(self, data):
-        self.collection.insert_one(data)
+        try:
+            self.collection.insert_one(data)
+        except pymongo.errors.DuplicateKeyError as e:
+            logger.warn(str(e))
+            logger.warn("Record already exists in database. Skipping")
 
 
 class MongoGeo(Mongo):
