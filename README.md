@@ -13,7 +13,7 @@ This project contains python scripts to log tweets from the
 and load them into Amazon S3 Buckets.
 The log files in S3 are then used as input for Elastic Map Reduce jobs.
 
-Also contains some *(retired)* scripts to extract POI nodes from OSM data and
+Also contains some scripts to extract POI nodes from OSM data and
 load into MongoDB, as well as loading US states and routes GeoJSON into MongoDB.
 
 ### Data Pipeline
