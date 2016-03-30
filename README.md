@@ -31,6 +31,7 @@ All if the dependencies for Ubuntu 14.04. Not all are required for everything.
 You can try just installing the pip `requirements.txt` and see what fails.
 Then see what else fails when you try to run specific scripts.
 ```bash
+sudo apt-get update
 sudo apt-get install \
     git python-pip python-dev \
     libgeos-dev libspatialindex-dev \       # for shapely and Rtree
