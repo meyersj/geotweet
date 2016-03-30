@@ -102,7 +102,7 @@ python loader.py boundary                       # load State and County GeoJSONs
 Download osm data and extract POI nodes. Load each POI into MongoDB with
 spatial index.
 
-**Run**: `python bin/loader.py osm [states.txt]`
+**Run**: `python bin/loader.py osm [/path/to/states.txt]`
 
 Optionally provide a list new line delimited US States.
 Defaults to `data/states.txt`
