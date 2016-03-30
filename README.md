@@ -8,39 +8,87 @@ MIT License. Copyright (c) 2016 Jeffrey Alan Meyers. See `LICENSE.md`
 
 ### About
 
-This project contains scripts to retrieve tweets from the Twitter Streaming API and
-load into Amazon S3 Buckets. The tweets in S3 are used as input for  Elastic Map Reduce jobs.
+This project contains python scripts to log tweets from the
+[Twitter Streaming API](https://dev.twitter.com/streaming/reference/post/statuses/filter)
+and load them into Amazon S3 Buckets.
+The log files in S3 are then used as input for Elastic MapReduce jobs.
 
-Also contains scripts to extract POI nodes from OSM data and load into MongoDB,
-as well as loading US states and routes GeoJSON into MongoDB.
+Also contains some scripts to extract POI nodes from OSM data and
+load into MongoDB, as well as loading US states and routes GeoJSON into MongoDB.
+
+### Dependencies
+
++ Python `requirements.txt` need to be installed with pip
++ To build a local vm, you need `virtualbox`/`vagrant` installed and the `ubuntu/trusty64` box
+
+```
+git clone https://github.com/meyersj/geotweet.git
+cd geotweet
+pip install -r requirements.txt   # it would be better to use a virtual environment
+```
+
+All if the dependencies for Ubuntu 14.04. Not all are required for everything.
+You can try just installing the pip `requirements.txt` and see what fails.
+Then see what else fails when you try to run specific scripts.
+```bash
+sudo apt-get update
+sudo apt-get install \
+    git python-pip python-dev \
+    libgeos-dev libspatialindex-dev \       # for shapely and Rtree
+    python-pyasn1 libssl-dev libffi-dev \   # to supress ssl warnings 
+    libxml2-dev libxslt1-dev \              # for reading OSM data
+    default-jre                             # for Omosis to processing OSM
+```
 
 ### Data Pipeline
 
-#### 1. Extract Geographic Tweets
+#### 1. Extract Geographic Tweets **(Daemon)**
 
-Python script running as a daemon will connect to [Twitter Streaming API)]
-(https://dev.twitter.com/streaming/reference/post/statuses/filter)
-and filter for tweets inside Continental US.
+Python script running on a cheap VPS (DigitalOcean) will connect to the
+*Twitter Streaming API* and filter for tweets inside Continental US.
 
-+ `python bin/streamer.py`
-+ See `example_conf/streamer_envvars.sh`. Required environment variables to run `streamer.py`
-+ See `example_conf/streamer.conf`. Upstart script to run as Daemon on Ubuntu
+For each tweet (if Lat-Lon coordinates are provided),
+extract fields, marshal as JSON and append to a log file.
+The log files are rotated every 60 minutes.
 
-For each tweet (if actual Lat-Lon coordinates are included),
-extract and marshal some fields as JSON and append to log file.
-Log files are rotated every 60 minutes.
+**Run**
+```bash
+cat example_conf/streamer_envvars.sh >> ~/.bashrc
+vim ~/.bashrc                         # set all of the environment variables
+source ~/.bashrc
+python bin/streamer.py
+```
 
-#### 2. Load Tweets into S3
+**Run as Daemon using Upstart**
+```bash
+sudo cp example_conf/streamer.conf /etc/init/
+sudo vim /etc/init/streamer.conf      # set all of the environment variables
+sudo service streamer start
+```
 
-Another python script running as a daemon will listen for log file
-rotations and upload the archived file to an Amazon S3 Bucket.
+#### 2. Load Tweets into S3 **(Daemon)**
 
-+ `python bin/s3listener.py`
-+ See `example_conf/s3listener_envvars.sh` for the required environment variables to run `s3listener.py`
-+ See `example_conf/s3listener.conf` for an Upstart script to run as Daemon on Ubuntu
+Another python script will be listening for the `streamer.py` log file rotations.
+Each archived file will be uploaded into an Amazon S3 Bucket.
 
+**Run**
+```bash
+cat example_conf/s3listener_envvars.sh >> ~/.bashrc
+vim ~/.bashrc                         # set all of the environment variables
+source ~/.bashrc
+python bin/s3listener.py
+```
 
-#### 3. Process with EMR
+**Run as Daemon using Upstart**
+```bash
+sudo cp example_conf/s3listener.conf /etc/init/
+sudo vim /etc/init/s3listener.conf    # set all of the environment variables
+sudo service s3listener start
+```
+**NOTE:** The `streaming.py` script must be raa at least once before `s3listener.py` script
+to create the correct directory structure.
+
+#### 3. Process with EMR **(Batch)**
 
 After log files have been collected for long enough run a Map Reduce
 job to count word occurences by each County, State and the entire US.
@@ -49,26 +97,26 @@ job to count word occurences by each County, State and the entire US.
 + See `bin/mapreduce_runner.sh` for an example of running local and EMR jobs
 + See `example_conf/mrjob.conf` for config required to run an EMR job
 
-
-### Dependencies
-
-+ python `requirements.txt` need to be installed
-
-
-### Run Scripts as Daemon
-
-If running on Ubuntu you can set the environment variables in
-`example_conf/streamer.conf` and `example_conf/s3listener.conf`,
-and copy those files to `/etc/init/`
-
-To start them as a service run:
-```
-sudo service streamer start
-sudo service s3listener start
+**Local**
+```bash
+cd geotweet/mapreduce/wordcount
+# run geo wordcount job with sample data
+python geo.py ../../../data/mapreduce/twitter-stream.log.2016-03-26_13-13
 ```
 
+**EMR**
+```bash
+cp example_conf/mrjob.conf ~/.mrjob.conf
+vim ~/.mrjob.conf       # set all of the config parameters, make sure all example paths are corrected
+cd geotweet/mapreduce/wordcount
+src=s3://some.s3.bucket/input                               # folder containing logs from `streamer.py`
+dst=s3://some.s3.bucket/output/<new folder>                 # the new folder should not already exist
+python geo.py $src -r emr --output-dir=$dst --no-output     # supress output to stdout (will go to s3)   
+```
 
-### Build VM with MongoDB using Virtualbox
+### Load Geographic Data into MongoDB
+
+#### Build VM with MongoDB using Virtualbox
 
 Make sure you have the Ubuntu 14.04 (`ubuntu/trusty64`) vagrant box installed.
 
@@ -78,23 +126,17 @@ cd geotweet
 vagrant up
 ```
 
-MongoDB should be accessible at `mongodb://127.0.0.1:27017`.
-Make sure all the required **environment variables** are set and the run the scripts
+If everything worked, MongoDB should be accessible at
+`mongodb://127.0.0.1:27017`.
 
 ```
 vagrant ssh
 
 # load mongo with geo data
-python /vagrant/bin/loader.py osm /vagrant/data/states.txt  # load OSM POI nodes
-python /vagrant/bin/loader.py boundary                      # load State and County GeoJSONs
-
-# run tests
-python /vagrant/tests/download_tests.py
-python /vagrant/tests/extract_tests.py
-python /vagrant/tests/mongo_tests.py
+cd /vagrant/bin
+python loader.py osm /vagrant/data/states.txt   # load OSM POI nodes
+python loader.py boundary                       # load State and County GeoJSONs
 ```
-
-### RETIRED - Load Geographic Data into MongoDB
 
 #### Load OSM POI Data in MongoDB
 
@@ -105,7 +147,7 @@ python /vagrant/tests/mongo_tests.py
 Download osm data and extract POI nodes. Load each POI into MongoDB with
 spatial index.
 
-**Run**: `python bin/loader.py osm [states.txt]`
+**Run**: `python bin/loader.py osm [/path/to/states.txt]`
 
 Optionally provide a list new line delimited US States.
 Defaults to `data/states.txt`
