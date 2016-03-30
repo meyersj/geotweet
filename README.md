@@ -16,6 +16,17 @@ The log files in S3 are then used as input for Elastic MapReduce jobs.
 Also contains some scripts to extract POI nodes from OSM data and
 load into MongoDB, as well as loading US states and routes GeoJSON into MongoDB.
 
+### Dependencies
+
++ Python `requirements.txt` need to be installed with pip
++ To build a local vm, you need `virtualbox`/`vagrant` installed and the `ubuntu/trusty64` box
+
+```
+git clone https://github.com/meyersj/geotweet.git
+cd geotweet
+pip install -r requirements.txt   # it would be better to use a virtual environment
+```
+
 ### Data Pipeline
 
 #### 1. Extract Geographic Tweets **(Daemon)**
@@ -27,9 +38,22 @@ For each tweet (if Lat-Lon coordinates are provided),
 extract fields, marshal as JSON and append to a log file.
 The log files are rotated every 60 minutes.
 
-+ `python bin/streamer.py`
-+ See `example_conf/streamer_envvars.sh`. Required environment variables to run `streamer.py`
-+ See `example_conf/streamer.conf`. Upstart script to run as Daemon on Ubuntu
+**Run**
+```bash
+cat example_conf/streamer_envvars.sh >> ~/.bashrc
+vim ~/.bashrc
+# set all thee environment variables
+source ~/.bashrc
+python bin/streamer.py
+```
+
+**Run as Daemon using Upstart**
+```bash
+sudo cp example_conf/streamer.conf /etc/init/
+sudo vim /etc/init/streamer.conf
+# set all thee environment variables
+sudo service streamer start
+```
 
 #### 2. Load Tweets into S3 **(Daemon)**
 
@@ -51,9 +75,7 @@ job to count word occurences by each County, State and the entire US.
 + See `example_conf/mrjob.conf` for config required to run an EMR job
 
 
-### Dependencies
 
-+ python `requirements.txt` need to be installed
 
 
 ### Run Scripts as Daemon
