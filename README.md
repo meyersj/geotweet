@@ -11,7 +11,7 @@ MIT License. Copyright (c) 2016 Jeffrey Alan Meyers. See `LICENSE.md`
 This project contains python scripts to log tweets from the
 [Twitter Streaming API](https://dev.twitter.com/streaming/reference/post/statuses/filter)
 and load them into Amazon S3 Buckets.
-The log files in S3 are then used as input for Elastic Map Reduce jobs.
+The log files in S3 are then used as input for Elastic MapReduce jobs.
 
 Also contains some scripts to extract POI nodes from OSM data and
 load into MongoDB, as well as loading US states and routes GeoJSON into MongoDB.
