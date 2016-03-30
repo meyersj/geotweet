@@ -9,7 +9,7 @@ MONGODB_URI = os.getenv('GEOTWEET_MONGODB_URI', 'mongodb://127.0.0.1:27017')
 DB = "test"
 COLLECTION = "test"
 PORTLAND = [-122.675983, 45.524764]
-
+DEFAULT_TIMEOUT = 5 * 1000
 
 class Mongo(object):
     """ Base wrapper class to connect to mongo and intialize a collection """
@@ -17,7 +17,13 @@ class Mongo(object):
     def __init__(self, db=DB, uri=MONGODB_URI, collection=COLLECTION):
         msg = "Setting up mongo client, uri={0}, db={1}, collection={2}"
         logger.info(msg.format(uri, db, collection))
-        self.client = MongoClient(uri)
+        timeout = DEFAULT_TIMEOUT
+        args = dict(
+            connectTimeoutMS=timeout,
+            socketTimeoutMS=timeout,
+            serverSelectionTimeoutMS=timeout
+        )
+        self.client = MongoClient(uri, **args)
         self.db = self.client[db]
         self.collection = self.db[collection]
 
