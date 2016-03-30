@@ -1,8 +1,9 @@
 import unittest
 import os
+from os.path import dirname
 import sys
 
-root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+root = dirname(dirname(dirname(os.path.abspath(__file__))))
 sys.path.append(root)
 
 from geotweet.download import Downloader
@@ -41,13 +42,8 @@ class DownloaderTests(unittest.TestCase):
     
     def test_invalid_download(self):
         self.clear_tmp() 
-        ioError = False
-        try:
+        with self.assertRaises(IOError):
             res = self.dl._download(self.invalid_url)
-        except IOError as e:
-            ioError = True
-        error = "Invalid url < {0} > should have caused IOError"
-        self.assertTrue(ioError, error.format(self.invalid_url))
         
 
 if __name__ == "__main__":

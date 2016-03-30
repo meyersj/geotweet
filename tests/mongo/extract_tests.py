@@ -1,9 +1,10 @@
 import unittest
 import os
+from os.path import dirname
 import sys
 import subprocess
 
-root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+root = dirname(dirname(dirname(os.path.abspath(__file__))))
 sys.path.append(root)
 
 from geotweet.extract import Extractor
