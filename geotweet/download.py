@@ -27,7 +27,8 @@ class Downloader(object):
         with open(states_file, 'r') as f:
             for state in f.read().splitlines():
                 url = self.build_url(state)
-                logger.info("Downloading {0} from {1}".format(state, url))
+                log = "Downloading State < {0} > from < {1} >"
+                logger.info(log.format(state, url))
                 outfiles.append(self._download(url))
         return outfiles
 
@@ -39,7 +40,8 @@ class Downloader(object):
             for block in res.iter_content(1024):
                 f.write(block)
         if tmp and os.path.getsize(tmp) < 500:
-            error = "Small file: {0} bytes, Failed to download: {1}"
+            error = "Small file: < {0} bytes > Failed to download: < {1} >"
+            error += "\nYou may have exceeded GeoFabriks ratelimit"
             logger.error(error.format(os.path.getsize(tmp), url))
             os.remove(tmp)
             raise IOError
