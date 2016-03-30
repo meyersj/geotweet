@@ -27,6 +27,18 @@ cd geotweet
 pip install -r requirements.txt   # it would be better to use a virtual environment
 ```
 
+All if the dependencies for Ubuntu 14.04. Not all are required for everything.
+You can try just installing the pip `requirements.txt` and see what fails.
+Then see what else fails when you try to run specific scripts.
+```bash
+sudo apt-get install \
+    python-pip python-dev \
+    libgeos-dev libspatialindex-dev \       # for shapely and Rtree
+    python-pyasn1 libssl-dev libffi-dev \   # to supress ssl warnings 
+    libxml2-dev libxslt1-dev \              # for reading OSM data
+    default-jre                             # for Omosis to processing OSM
+```
+
 ### Data Pipeline
 
 #### 1. Extract Geographic Tweets **(Daemon)**
