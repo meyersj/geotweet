@@ -79,8 +79,8 @@ def osm_runner(source=DEFAULT_PBF, outdir=DEFAULT_OUT_DIR, batch=False):
 def boundary_runner():
     """ Top level runner to load State and County  GeoJSON files into Mongo DB """
     logger.info("Starting States and Counties GeoJSON MongoDB DB loading process.")
-    states = os.path.join(DATA_DIR, 'us_states.json')
-    counties = os.path.join(DATA_DIR, 'us_counties.json')
+    states = os.path.join(DATA_DIR, 'geo/us_states.json')
+    counties = os.path.join(DATA_DIR, 'geo/us_counties.json')
     load_geo_mongo('states', states)
     load_geo_mongo('counties', counties)
     logger.info("Finished loading State and County data into Mongo DB.")
@@ -167,7 +167,7 @@ def load_geo_mongo(collection, json_file, uri=MONGODB_URI):
 
     """
     log = "Loading GeoJSON < {0} > into mongodb collection < {1} >"
-    logger.info(log.format(data))
+    logger.info(log.format(json_file, collection))
     mongo = MongoGeo(db='boundary', collection=collection, uri=uri)
     GeoJSONLoader().load(json_file, mongo.insert)  
 
