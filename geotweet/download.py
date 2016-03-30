@@ -27,6 +27,7 @@ class Downloader(object):
         with open(states_file, 'r') as f:
             for state in f.read().splitlines():
                 url = self.build_url(state)
+                logger.info("Downloading {0} from {1}".format(state, url))
                 outfiles.append(self._download(url))
         return outfiles
 
