@@ -41,8 +41,7 @@ The log files are rotated every 60 minutes.
 **Run**
 ```bash
 cat example_conf/streamer_envvars.sh >> ~/.bashrc
-vim ~/.bashrc
-# set all of the environment variables
+vim ~/.bashrc                         # set all of the environment variables
 source ~/.bashrc
 python bin/streamer.py
 ```
@@ -50,8 +49,7 @@ python bin/streamer.py
 **Run as Daemon using Upstart**
 ```bash
 sudo cp example_conf/streamer.conf /etc/init/
-sudo vim /etc/init/streamer.conf
-# set all of the environment variables
+sudo vim /etc/init/streamer.conf      # set all of the environment variables
 sudo service streamer start
 ```
 
@@ -63,8 +61,7 @@ Each archived file will be uploaded into an Amazon S3 Bucket.
 **Run**
 ```bash
 cat example_conf/s3listener_envvars.sh >> ~/.bashrc
-vim ~/.bashrc
-# set all of the environment variables
+vim ~/.bashrc                         # set all of the environment variables
 source ~/.bashrc
 python bin/s3listener.py
 ```
@@ -72,8 +69,7 @@ python bin/s3listener.py
 **Run as Daemon using Upstart**
 ```bash
 sudo cp example_conf/s3listener.conf /etc/init/
-sudo vim /etc/init/s3listener.conf
-# set all of the environment variables
+sudo vim /etc/init/s3listener.conf    # set all of the environment variables
 sudo service s3listener start
 ```
 **NOTE:** The `streaming.py` script must be raa at least once before `s3listener.py` script
@@ -99,9 +95,7 @@ python geo.py ../../../data/mapreduce/twitter-stream.log.2016-03-26_13-13
 **EMR**
 ```bash
 cp example_conf/mrjob.conf ~/.mrjob.conf
-vim ~/.mrjob.conf
-# set all of the config parameters
-# make sure all example paths are corrected
+vim ~/.mrjob.conf       # set all of the config parameters, make sure all example paths are corrected
 cd geotweet/mapreduce/wordcount
 src=s3://some.s3.bucket/input                               # folder containing logs from `streamer.py`
 dst=s3://some.s3.bucket/output/<new folder>                 # the new folder should not already exist
