@@ -1,6 +1,7 @@
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import os
+import sys
 
 
 LOG_NAME = 'geotweet'
@@ -10,13 +11,20 @@ TWITTER_LOG_NAME = 'twitter-stream'
 
 
 def get_logger():
-    logger = logging.getLogger(LOG_NAME)
-    logger.setLevel(LOG_LEVEL)
-    fh = logging.FileHandler(LOG_FILE)
     logformat = '%(levelname)s %(pathname)s %(asctime)s: %(message)s'
     formatter = logging.Formatter(logformat)
+    logger = logging.getLogger(LOG_NAME)
+    logger.setLevel(LOG_LEVEL)
+    # output file
+    fh = logging.FileHandler(LOG_FILE)
+    fh.setLevel(LOG_LEVEL)
     fh.setFormatter(formatter)
     logger.addHandler(fh)
+    # standard out
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(LOG_LEVEL)
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
     return logger
 
 
