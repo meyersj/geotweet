@@ -28,7 +28,7 @@ class DownloaderTests(unittest.TestCase):
         state = "Rhode Island"
         actual = self.dl.build_url(self.valid_state)
         expected = self.valid_url 
-        error = "download url built incorrectly, actual: {0}, expected: {1}"
+        error = "Download url built incorrectly, Actual: < {0}> , Expected: < {1} >"
         self.assertEqual(actual, expected, error.format(actual, expected))
 
     def test_valid_download(self):
@@ -46,7 +46,7 @@ class DownloaderTests(unittest.TestCase):
             res = self.dl._download(self.invalid_url)
         except IOError as e:
             ioError = True
-        error = "Invalid url {0} should have caused IOError"
+        error = "Invalid url < {0} > should have caused IOError"
         self.assertTrue(ioError, error.format(self.invalid_url))
         
 
