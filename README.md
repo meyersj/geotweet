@@ -87,7 +87,6 @@ job to count word occurences by each County, State and the entire US.
 **Local**
 ```bash
 cd geotweet/mapreduce/wordcount
-
 # run geo wordcount job with sample data
 python geo.py ../../../data/mapreduce/twitter-stream.log.2016-03-26_13-13
 ```
