@@ -3,9 +3,6 @@ import os
 from os.path import dirname
 import sys
 
-#root = dirname(dirname(dirname(os.path.abspath(__file__))))
-#sys.path.append(root)
-
 from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError
 
@@ -15,16 +12,19 @@ PORTLAND = [-122.675983, 45.524764]
 PROVIDENCE = [-71.404823, 41.827730]
 JOHN_HAY = "John Hay Library"
 
+TIMEOUT = 1 * 1000
 
 def check_connection():
-    timeout = 1 * 1000
+    timeout = TIMEOUT
     args = dict(
+        connect=False,
         connectTimeoutMS=timeout,
         socketTimeoutMS=timeout,
         serverSelectionTimeoutMS=timeout
     )   
     try:
-        MongoClient(MONGODB_URI, **args)
+        m = MongoClient(MONGODB_URI, **args)
+        m.database_names()
         return True
     except ServerSelectionTimeoutError:
         return False
