@@ -19,7 +19,7 @@ load into MongoDB, as well as loading US states and routes GeoJSON into MongoDB.
 ### Dependencies
 
 + Dependencies for Ubuntu 14.04
-+ If you want to process OSM data you will also need to install a JRE and `Osmosis` installed
++ If you want to process OSM data you will also need to have a JRE and `Osmosis` installed
 ```bash
 sudo apt-get update
 # for pip requirements
