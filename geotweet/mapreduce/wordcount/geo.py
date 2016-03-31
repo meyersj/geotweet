@@ -1,8 +1,10 @@
 import sys
 import os
 import re
+import hashlib
 import json
 import urllib2
+from urllib2 import HTTPError
 
 from mrjob.job import MRJob
 from mrjob.step import MRStep
@@ -14,7 +16,6 @@ from shapely.geometry.point import Point
 from rtree import index
 
 
-GEOHASH_PRECISION = 7
 """
 https://en.wikipedia.org/wiki/Geohash
 
@@ -26,13 +27,22 @@ precision   width   height
 7           152.9m  152.4m
 8           38.2m   19m
 """
-
+GEOHASH_PRECISION = 7
 MIN_WORD_COUNT = 5      # ignore low occurences
-
+RTREE_LOCATION = '/tmp/geotweet-rtree-{0}'
 # Reference files to be downloaded from S3
 AWS_BUCKET = "https://s3-us-west-2.amazonaws.com/jeffrey.alan.meyers.bucket"
+STOPWORDS_LIST_URL = os.path.join(AWS_BUCKET, "geotweet/stopwords.txt")
 COUNTIES_GEOJSON_URL = os.path.join(AWS_BUCKET, "geotweet/us_counties.json")
-STOPWORDS_URL = os.path.join(AWS_BUCKET, "geotweet/stopwords.txt")
+# use local files if these environment variables are set with a filepath
+try:
+    COUNTIES_GEOJSON = os.environ['COUNTIES_GEOJSON_LOCAL']
+except KeyError:
+    COUNTIES_GEOJSON = COUNTIES_GEOJSON_URL
+try:
+    STOPWORDS_LIST = os.environ['STOPWORDS_LIST_LOCAL']
+except KeyError:
+    STOPWORDS_LIST = STOPWORDS_LIST_URL
 
 
 class MRGeoWordCount(MRJob):
@@ -57,7 +67,7 @@ class MRGeoWordCount(MRJob):
 
     def mapper_init(self):
         """ Download counties geojson from S3 and build spatial index and cache """
-        self.counties = CountyLookup()
+        self.counties = CachedCountyLookup()
         self.extractor = WordExtractor()
     
     def mapper(self, _, line):
@@ -103,21 +113,48 @@ class MRGeoWordCount(MRJob):
         yield (parts[0], state, county), total
 
 
-class WordExtractor(object):
+class FileReader(object):
+    """ Read file from the local file system or remote url """
+
+    def is_url(self, src):
+        return src.startswith('http')
+
+    def is_valid_src(self, src):
+        return os.path.isfile(src) or self.is_url(src)
+
+    def read(self, src):
+        """ Download GeoJSON file of US counties from url (S3 bucket) """
+        geojson = None
+        if not self.is_valid_src(src):
+            error = "File < {0} > does not exists or does start with 'http'."
+            raise ValueError(error.format(src))
+        if not self.is_url(src):
+            return open(src, 'r').read().decode('latin-1').encode('utf-8')
+        response = urllib2.urlopen(src)
+        return response.read().decode('latin-1').encode('utf-8')
+
+
+class WordExtractor(FileReader):
+    """
+    Extract words from a tweet.
+
+    If a provided `src` keyword param references a local file or remote resource
+    containing list of stop words, the will be download and used to exclude
+    extracted words
     
-    def __init__(self, stopwords=STOPWORDS_URL):
+    """
+    def __init__(self, src=STOPWORDS_LIST):
         self.sub_all = re.compile("""[#.!?,"(){}[\]|]|&amp;""")
         self.sub_ends = re.compile("""^[@\\\/~]*|[\\\/:~]*$""")
         self.stopwords = {}
-        if stopwords:
-            words = self.download(stopwords)
+        if src:
+            if not self.is_valid_src(src):
+                error = "Arg src=< {0} > is invalid."
+                error += " Must be existing file or url that starts with 'http'"
+                raise ValueError(error.format(src))
+            words = self.read(src)
             for word in words.splitlines():
                     self.stopwords[word] = ""
-    
-    def download(self, url):
-        """ Download stopwords.txt file from url (S3 bucket) """
-        response = urllib2.urlopen(url)
-        return response.read()
 
     def clean_unicode(self, line):
         chars = [char for char in line.lower()]
@@ -146,13 +183,78 @@ class WordExtractor(object):
         return words
 
 
-class CountyLookup(object):
-    """ Dowload counties geojson, build index and provide lookup functionality """
+class SpatialLookup(FileReader):
+    """ Create a indexed spatial lookup of a geojson file """
     
-    def __init__(self):
-        self.index = CountySpatialIndex().build()
-        self.geohash_cache = {}
+    idx = None
+
+    def __init__(self, src=None):
+        if src:
+            if not self.is_valid_src(src):
+                error = "Arg src=< {0} > is invalid."
+                error += " Must be existing file or url that starts with 'http'"
+                raise ValueError(error.format(src))
+            # location of index based on hash on input src name
+            location = self.get_location(src)
+            if not self._exists(location):
+                # index does not create so fetch data and build it
+                self._build(src, location)
+            else:
+                # index already exists
+                self.idx = index.Rtree(location)
+    
+    def get_location(self, src):
+        return RTREE_LOCATION.format(self.digest(src))
+
+    def digest(self, src):
+        m = hashlib.md5()
+        if self.is_url(src):
+            m.update(src)
+        else:
+            m.update(os.path.abspath(src))
+        return m.hexdigest()
+
+    def _exists(self, location):
+        dat = location + ".dat"
+        idx = location + ".idx"
+        if os.path.isfile(dat) and os.path.isfile(idx):
+            return True
+        return False
+
+    def get_object(self, point):
+        """ lookup object based on point as [longitude, latitude] """
+        # first search bounding boxes
+        # idx.intersection method modifies input if it is a list
+        tmp = tuple(point)
+        for bbox_match in self.idx.intersection(tmp, objects=True):
+            # check actual geometry
+            record = bbox_match.object
+            if record['geometry'].intersects(Point(tmp)):
+                return record['properties']
+        return None
    
+    def _build(self, src, location):
+        """ Build a RTree index to disk using bounding box of each feature """
+        geojson = json.loads(self.read(src))
+        if geojson:
+            self.idx = index.Rtree(location)
+        for i, feature in enumerate(geojson['features']):
+            feature['geometry'] = shape(feature['geometry'])
+            self._index(i, feature)
+
+    def _index(self, key, feature):
+        """ index geojson feature using its boundin box """
+        self.idx.insert(key, feature['geometry'].bounds, obj=feature)
+
+
+class CachedCountyLookup(SpatialLookup):
+    """ Dowload counties geojson, build index and provide lookup functionality """
+
+    geohash_cache = {}
+
+    def __init__(self, src=COUNTIES_GEOJSON):
+        super(CachedCountyLookup, self).__init__(src=src)
+
     def get(self, geohash):
         """ lookup state and county based on geohash of coordinates from tweet """
         if geohash in self.geohash_cache:
@@ -161,53 +263,12 @@ class CountyLookup(object):
         # cache miss on geohash
         state = county = None
         coord = Geohash.decode(geohash)
-        prop = self.index.get([float(coord[1]), float(coord[0])])
+        prop = self.get_object([float(coord[1]), float(coord[0])])
         if prop:
             state = prop['STATE']
             county = prop['COUNTY']
         self.geohash_cache[geohash] = (state, county)
         return state, county
-
-
-class CountySpatialIndex(object):
-    """ Create an local spatial index of all counties in the US """
- 
-    def build(self, url=COUNTIES_GEOJSON_URL):
-        """ Build a RTree index using bounding box of each US county """
-        self.idx = index.Index()
-        self.data = {}
-        counties = json.loads(self.download(url))
-        for i, feature in enumerate(counties['features']):
-            feature['geometry'] = shape(feature['geometry'])
-            self.index(i, feature)
-        return self
-
-    def download(self, url):
-        """ Download GeoJSON file of US counties from url (S3 bucket) """
-        response = urllib2.urlopen(url)
-        try:
-            return response.read().decode('latin-1').encode('utf-8')
-        except Exception as e:
-            print e
-            sys.exit(1)
-
-    def index(self, key, feature):
-        """
-        add geojson feature to bounding box index
-        
-        feature is geojson dict where 'geometry' key is a shapely.geometry object
-        """
-        self.idx.insert(key, feature['geometry'].bounds)
-        self.data[key] = feature
-
-    def get(self, point):
-        """ lookup county based on point as [longitude, latitude] """
-        # first search bounding boxes
-        for i in self.idx.intersection(point):
-            # check actual geometry
-            if self.data[i]['geometry'].intersects(Point(point)):
-                return self.data[i]['properties']
-        return None
 
 
 if __name__ == '__main__':
