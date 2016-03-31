@@ -17,7 +17,6 @@ TIMEOUT = 2 * 1000
 def check_connection():
     timeout = TIMEOUT
     args = dict(
-        connect=False,
         connectTimeoutMS=timeout,
         socketTimeoutMS=timeout,
         serverSelectionTimeoutMS=timeout
