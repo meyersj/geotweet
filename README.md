@@ -18,11 +18,8 @@ load into MongoDB, as well as loading US states and routes GeoJSON into MongoDB.
 
 ### Dependencies
 
-Below are all the dependencies for Ubuntu 14.04.
-Not all are required for everything.
-You can try just installing the pip `requirements.txt` and see what fails.
-Then see what else fails when you try to run the specific scripts.
-If you want to process OSM data you will also need to install a JRE and `Osmosis`.
++ Dependencies for Ubuntu 14.04
++ If you want to process OSM data you will also need to install a JRE and `Osmosis` installed
 ```bash
 sudo apt-get update
 # for pip requirements
@@ -32,15 +29,24 @@ sudo apt-get install \
     libxml2-dev libxslt1-dev zlib1g-dev     # for lxml to read OSM data
 ```
 
-+ Python `requirements.txt` need to be installed with pip
-+ To build a local vm, you need `virtualbox`/`vagrant` installed and the `ubuntu/trusty64` box
 
++ Clone
 ```
 git clone https://github.com/meyersj/geotweet.git
 cd geotweet
+```
+
++ Install python packages
+```
 pip install -r requirements.txt   # it would be better to use a virtual environment
 ```
 
++ To build a local vm, you need `virtualbox`/`vagrant` installed and the `ubuntu/trusty64` box
+```
+vagrant box add ubuntu/trusty64
+vagrant up                          # runs bin/setup.py to install dependencies and Mongo DB 
+vagrant ssh
+```
 
 ### Data Pipeline
 
