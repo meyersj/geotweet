@@ -150,8 +150,8 @@ vagrant ssh
 
 # load mongo with geo data
 cd /vagrant/bin
-python loader.py osm /vagrant/data/states.txt   # load OSM POI nodes
-python loader.py boundary                       # load State and County GeoJSONs
+python loader.py osm [../data/states/states.txt]    # load OSM POI nodes (optional path to list of states to download)
+python loader.py boundary                           # load State and County GeoJSONs
 ```
 
 #### Load OSM POI Data in MongoDB
