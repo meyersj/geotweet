@@ -41,13 +41,6 @@ cd geotweet
 pip install -r requirements.txt   # it would be better to use a virtual environment
 ```
 
-+ To build a local vm, you need `virtualbox`/`vagrant` installed and the `ubuntu/trusty64` box
-```
-vagrant box add ubuntu/trusty64
-vagrant up                          # runs bin/setup.py to install dependencies and Mongo DB 
-vagrant ssh
-```
-
 ### Data Pipeline
 
 #### 1. Extract Geographic Tweets **(Daemon)**
@@ -132,18 +125,15 @@ python geo.py $src -r emr --output-dir=$dst --no-output     # supress output to 
 
 ### Load Geographic Data into MongoDB
 
-#### Build VM with MongoDB using Virtualbox
+#### Build VM
 
-Make sure you have the Ubuntu 14.04 (`ubuntu/trusty64`) vagrant box installed.
-
-```bash
-git clone https://github.com/meyersj/geotweet.git
-cd geotweet
-vagrant up
++ To build a local vm with Mongo DB, you need `virtualbox`/`vagrant` installed and the `ubuntu/trusty64` box
+```
+vagrant box add ubuntu/trusty64
+vagrant up                          # runs `bin/setup.py` to install dependencies and Mongo DB 
 ```
 
-If everything worked, MongoDB should be accessible at
-`mongodb://127.0.0.1:27017`.
+If everything worked, MongoDB should be accessible at `mongodb://127.0.0.1:27017`.
 
 ```
 vagrant ssh
