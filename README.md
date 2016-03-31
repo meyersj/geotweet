@@ -22,14 +22,14 @@ Below are all the dependencies for Ubuntu 14.04.
 Not all are required for everything.
 You can try just installing the pip `requirements.txt` and see what fails.
 Then see what else fails when you try to run the specific scripts.
+If you want to process OSM data you will also need to install a JRE and `Osmosis`.
 ```bash
 sudo apt-get update
+# for pip requirements
 sudo apt-get install \
     git python-pip python-dev \
     libgeos-dev libspatialindex-dev \       # for shapely and Rtree
-    python-pyasn1 libssl-dev libffi-dev \   # to supress ssl warnings 
-    libxml2-dev libxslt1-dev \              # for reading OSM data
-    default-jre                             # for Omosis to processing OSM
+    libxml2-dev libxslt1-dev zlib1g-dev     # for lxml to read OSM data
 ```
 
 + Python `requirements.txt` need to be installed with pip
