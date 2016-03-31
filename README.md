@@ -54,8 +54,9 @@ The log files are rotated every 60 minutes.
 **Run**
 ```bash
 cat example_conf/streamer_envvars.sh >> ~/.bashrc
-vim ~/.bashrc                         # set all of the environment variables
+vim ~/.bashrc                                           # set all of the environment variables
 source ~/.bashrc
+nosetests tests/envvar_tests.py:StreamerEnvvarTests     # check your environment variables
 python bin/streamer.py
 ```
 
@@ -74,8 +75,9 @@ Each archived file will be uploaded into an Amazon S3 Bucket.
 **Run**
 ```bash
 cat example_conf/s3listener_envvars.sh >> ~/.bashrc
-vim ~/.bashrc                         # set all of the environment variables
+vim ~/.bashrc                                               # set all of the environment variables
 source ~/.bashrc
+nosetests tests/envvar_tests.py:S3ListenerEnvvarTests       # check your environment variables
 python bin/s3listener.py
 ```
 
