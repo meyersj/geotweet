@@ -15,7 +15,6 @@ from shapely.geometry import shape
 from shapely.geometry.point import Point
 from rtree import index
 
-
 """
 https://en.wikipedia.org/wiki/Geohash
 
@@ -204,9 +203,14 @@ class SpatialLookup(FileReader):
                 self.idx = index.Rtree(location)
     
     def get_location(self, src):
-        return RTREE_LOCATION.format(self.digest(src))
+        digest = self.digest(src)
+        if not digest:
+            return None
+        return RTREE_LOCATION.format(digest)
 
     def digest(self, src):
+        if not src or type(src) != str:
+            return None
         m = hashlib.md5()
         if self.is_url(src):
             m.update(src)
@@ -225,7 +229,13 @@ class SpatialLookup(FileReader):
         """ lookup object based on point as [longitude, latitude] """
         # first search bounding boxes
         # idx.intersection method modifies input if it is a list
-        tmp = tuple(point)
+        try:
+            tmp = tuple(point)
+        except TypeError:
+            return None
+        # point must be in the form (minx, miny, maxx, maxy) or (x, y)
+        if len(tmp) not in [2, 4]:
+            return None
         for bbox_match in self.idx.intersection(tmp, objects=True):
             # check actual geometry
             record = bbox_match.object
@@ -236,15 +246,15 @@ class SpatialLookup(FileReader):
     def _build(self, src, location):
         """ Build a RTree index to disk using bounding box of each feature """
         geojson = json.loads(self.read(src))
+        def generate():
+            for i, feature in enumerate(geojson['features']):
+                feature['geometry'] = shape(feature['geometry'])
+                yield i, feature['geometry'].bounds, feature
         if geojson:
+            # create index, flush to disk which disables access then re-enable access
+            self.idx = index.Rtree(location, generate())
+            self.idx.close()
             self.idx = index.Rtree(location)
-        for i, feature in enumerate(geojson['features']):
-            feature['geometry'] = shape(feature['geometry'])
-            self._index(i, feature)
-
-    def _index(self, key, feature):
-        """ index geojson feature using its boundin box """
-        self.idx.insert(key, feature['geometry'].bounds, obj=feature)
 
 
 class CachedCountyLookup(SpatialLookup):
