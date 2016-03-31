@@ -103,8 +103,6 @@ job to count word occurences by each County, State and the entire US.
 **Local**
 ```bash
 nosetests tests/mapreduce                           # run some basic tests for geo.py MapReduce job
-# note the test sometimes raises "RTreeError: ... Spatial Index Error: ..."
-# attempt to re-run the test for success
 cd geotweet/mapreduce/wordcount
 # run geo wordcount job with sample data
 python geo.py ../../../data/mapreduce/twitter-stream.log.2016-03-26_13-
