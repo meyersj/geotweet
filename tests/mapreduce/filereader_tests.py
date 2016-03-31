@@ -14,7 +14,7 @@ GEOTWEET_DIR = root
 STOPWORDS_LIST_LOCAL = os.path.join(GEOTWEET_DIR, 'data/stopwords.txt')
 
 
-class FileReaderTestCases(unittest.TestCase):
+class ReadTests(unittest.TestCase):
     
     def setUp(self):
         pass
@@ -44,31 +44,7 @@ class FileReaderTestCases(unittest.TestCase):
         src = self.invalid_local
         with self.assertRaises(ValueError):
             retrieved = self.fr.read(src) 
- 
 
-    """
-    def validate(self, lookup):
-        portland = [-122.5, 45.5]
-        expected = 'Oregon'
-        prop = lookup.get_object(portland)
-        error = "Lookup of < {0} > failed. Expected < {1} >, Actual < {2} >"
-        actual = prop['NAME']
-        self.assertEqual(expected, actual, error.format(portland, expected, actual))
-    
-    def test_invalid_remote(self):
-        src = self.invalid_remote
-        location = self.helper.get_location(src)
-        self.clear(location)
-        with self.assertRaises(HTTPError):
-            lookup = SpatialLookup(src=src)    
-
-    def test_invalid_local(self):
-        src = self.invalid_local
-        location = self.helper.get_location(src)
-        self.clear(location)
-        with self.assertRaises(ValueError):
-            lookup = SpatialLookup(src=self.invalid_local)
-    """
 
 if __name__ == "__main__":
     unittest.main()
