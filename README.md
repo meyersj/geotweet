@@ -95,7 +95,7 @@ sudo cp example_conf/s3listener.conf /etc/init/
 sudo vim /etc/init/s3listener.conf    # set all of the environment variables
 sudo service s3listener start
 ```
-**NOTE:** The `streaming.py` script must be raa at least once before `s3listener.py` script
+**NOTE:** The `streaming.py` script must be ran at least once before `s3listener.py` script
 to create the correct directory structure.
 
 #### 3. Process with EMR **(Batch)**
