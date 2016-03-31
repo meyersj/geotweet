@@ -67,6 +67,28 @@ sudo cp example_conf/streamer.conf /etc/init/
 sudo vim /etc/init/streamer.conf      # set all of the environment variables
 sudo service streamer start
 ```
+Example of log entry (1 line)
+```
+{
+   "source" : "<a href=\"http://www.tweet3po.org\" rel=\"nofollow\">Tweet3po</a>",
+   "followers_count" : 959,
+   "screen_name" : "Tweet3po",
+   "tweet_id" : "712897292534087681",
+   "friends_count" : 5,
+   "location" : "Orlando, FL",
+   "timestamp" : "1458802934188",
+   "text" : "#HouseBusinessCheck 1750 Mills Ave N 32803 (3/24 02:45) #Orlando #LakeFormosa",
+   "created_at" : "Thu Mar 24 07:02:14 +0000 2016",
+   "user_id" : 56266341,
+   "description" : "Hyper-Local Neighborhood News.",
+   "name" : "Tweet3po",
+   "lonlat" : [
+      -81.36450067,
+      28.56774084
+   ]
+}
+```
+
 
 #### 2. Load Tweets into S3 **(Daemon)**
 
