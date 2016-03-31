@@ -44,7 +44,6 @@ class S3ListenerEnvvarTests(unittest.TestCase):
             error += "Environment Variable: < {0} > not set\n"
             error += "These all must be set < {1} >"
             env = os.getenv(required)
-            print env
             self.assertIsNotNone(env, error.format(required, envvars))
 
 if __name__ == "__main__":
