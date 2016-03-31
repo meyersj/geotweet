@@ -23,7 +23,7 @@ S3LISTENER_ENVVARS = [
 ]
 
 
-class StreamerEnvVarTests(unittest.TestCase):
+class StreamerEnvvarTests(unittest.TestCase):
     
     def test_envvars(self):
         envvars = STREAMER_ENVVARS
@@ -36,7 +36,7 @@ class StreamerEnvVarTests(unittest.TestCase):
             self.assertIsNotNone(env, error.format(required, envvars))
 
 
-class S3ListenerEnvVarTests(unittest.TestCase):
+class S3ListenerEnvvarTests(unittest.TestCase):
     
     def test_envvars(self):
         envvars = S3LISTENER_ENVVARS
