@@ -9,8 +9,8 @@ from rtree import index
 root = dirname(dirname(dirname(os.path.abspath(__file__))))
 sys.path.append(root)
 
-from mapreduce.wordcount.geo import MRGeoWordCount, GEOHASH_PRECISION
-from mapreduce.wordcount.geo import SpatialLookup, RTREE_LOCATION
+from mapreduce.geo import MRGeoWordCount, GEOHASH_PRECISION
+from mapreduce.geo import SpatialLookup, RTREE_LOCATION
 
 
 GEOTWEET_DIR = root
