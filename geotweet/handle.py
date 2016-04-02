@@ -8,10 +8,11 @@ from log import logger, get_rotating_logger
 
 class LogTweetHandler(object):
 
-    def __init__(self, logfile, interval=60, when="M"):
+    def __init__(self, logfile=None, interval=60, when="M"):
         """ interval is number of minutes for each log file """
-        self.logger = get_rotating_logger(logfile, interval)
-        self.logfile = logfile
+        if logfile:
+            self.logger = get_rotating_logger(logfile, interval)
+            self.logfile = logfile
 
     def _validate(self, key, record):
         if key in record and record[key]:
