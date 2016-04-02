@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 
 import twitter
 
@@ -18,7 +19,7 @@ class TwitterClient(object):
             )
             self.api.VerifyCredentials()
         except twitter.error.TwitterError as e:
-            logger.error("Error connecting to twitter API")
+            logger.error("Error connecting to twitter API " + str(e))
             sys.exit(1)
 
 
@@ -44,10 +45,17 @@ class TwitterStream(object):
                 logger.error(value)
                 raise EnvironmentError(value)
     
-    def start(self, handler, locations=None):
-        try:
-            for record in self.api.GetStreamFilter(locations=locations):
-                handler.handle(record)
-        except Exception as e:
-            logger.error(e)
-            sys.exit(1)
+    def stream(self, streamer, handler, timeout):
+        if timeout:
+            stop = time.time() + timeout
+        for record in streamer:
+            if timeout and time.time() > stop:
+                break
+            handler.handle(record)
+
+    def start(self, handler, timeout=0, locations=None):
+        if locations:
+            streamer = self.api.GetStreamFilter(locations=locations)
+        else:
+            streamer = self.api.GetStreamSample()
+        self.stream(streamer, handler, timeout)
