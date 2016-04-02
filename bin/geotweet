@@ -7,10 +7,10 @@ import argparse
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(root)
 
-from geotweet.log import logger
-from geotweet.stream import TwitterStream, LogTweetHandler
-from geotweet.load import S3Loader
-from geotweet.log import logger
+from geotweet import logger
+from geotweet import TwitterStream
+from geotweet import LogTweetHandler
+from geotweet import LogListener
 
 
 # Bounding Box: [Lon,Lat SW corner, Lon,Lat NE corner]
@@ -24,43 +24,52 @@ AWS_BUCKET = os.getenv("AWS_BUCKET", None)
 AWS_REGION = os.getenv("AWS_DEFAULT_REGION", None)
 
 
-def parser():
-    log_help = "Path to log file directoy"
-    log_interval_help = "Minutes in each log file"
-    bbox_help = "Bounding Box as 'SW,NE' using 'Lon,Lat' for each point"
-    bucket_help = "AWS S3 Bucket name"
-    region_help = "AWS S3 Region such as 'us-west-2'"
-
-    log_args = dict(type=str, default=LOG_DIR, help=log_help)
-    log_interval_args = dict(type=int, default=LOG_INTERVAL, help=log_interval_help)
-    bbox_args = dict(type=str, default=US, help=bbox_help)
-    bucket_args = dict(type=str, default=AWS_BUCKET, help=bucket_help)
-    region_args = dict(type=str, default=AWS_REGION, help=region_help)
-
-    parser = argparse.ArgumentParser(description='Log and store geographic tweets')
-    subparser = parser.add_subparsers()
-
-    stream_parser = subparser.add_parser('stream')
-    stream_parser.set_defaults(which='stream')
-    stream_parser.add_argument('--log-dir', **log_args)
-    stream_parser.add_argument('--log-interval', **log_interval_args)
-    stream_parser.add_argument('--bbox', **bbox_args)
-
-    listen_parser = subparser.add_parser('listen')
-    listen_parser.set_defaults(which='listen')
-    listen_parser.add_argument('--log-dir', **log_args)
-    listen_parser.add_argument('--bucket', **bucket_args)
-    listen_parser.add_argument('--region', **region_args)
-    
-    return parser
-
-
 def main():
     args = parser().parse_args()
     if args.which == 'stream':
         stream(args)
     elif args.which == 'listen':
-        LogListener(args).start()
+        listen(args)
+
+
+def parser():
+    # help messages
+    log_help = "Path to log file directoy"
+    log_interval_help = "Minutes in each log file"
+    bbox_help = "Bounding Box as 'SW,NE' using 'Lon,Lat' for each point"
+    bucket_help = "AWS S3 Bucket name"
+    region_help = "AWS S3 Region such as 'us-west-2'"
+    # keywords args for adding arguments
+    log_args = dict(type=str, default=LOG_DIR, help=log_help)
+    log_interval_args = dict(type=int, default=LOG_INTERVAL, help=log_interval_help)
+    bbox_args = dict(type=str, default=US, help=bbox_help)
+    bucket_args = dict(type=str, default=AWS_BUCKET, help=bucket_help)
+    region_args = dict(type=str, default=AWS_REGION, help=region_help)
+    # build parser
+    parser = argparse.ArgumentParser(description='Log and store geographic tweets')
+    subparser = parser.add_subparsers()
+    # stream arguments
+    stream_parser = subparser.add_parser('stream')
+    stream_parser.set_defaults(which='stream')
+    stream_parser.add_argument('--log-dir', **log_args)
+    stream_parser.add_argument('--log-interval', **log_interval_args)
+    stream_parser.add_argument('--bbox', **bbox_args)
+    # listen arguments
+    listen_parser = subparser.add_parser('listen')
+    listen_parser.set_defaults(which='listen')
+    listen_parser.add_argument('--log-dir', **log_args)
+    listen_parser.add_argument('--bucket', **bucket_args)
+    listen_parser.add_argument('--region', **region_args)
+    return parser
+
+
+def build_bbox(bbox):
+    # build bounding box from bbox argument
+    coords = [ coord.strip() for coord in bbox.split(',') ]
+    if len(coords) != 4:
+        error = "--bbox must be in the form 'sw-x,sw-y,ne-x,ne-y'"
+        raise ValueError(error.format(bbox))
+    return [coords[0] + "," + coords[1], coords[2] + "," + coords[3]]
 
 
 def stream(args):
@@ -74,65 +83,15 @@ def stream(args):
     logger.info("Streaming to output log: {0}".format(log))
     logger.info("Log Interval (min): {0}".format(args.log_interval))
     logger.info("Bounding Box: {0}".format(args.bbox))
-    coords = [ coord.strip() for coord in args.bbox.split(',') ]
-    if len(coords) != 4:
-        error = "--bbox must be in the form 'sw-x,sw-y,ne-x,ne-y'"
-        raise ValueError(error.format(args.bbox))
-    bbox = [coords[0] + "," + coords[1], coords[2] + "," + coords[3]]
+    # setup log tweet handler and start streaming
     handler = LogTweetHandler(log, interval=args.log_interval)
     stream = TwitterStream()
-    stream.start(handler, locations=bbox)
+    stream.start(handler, locations=build_bbox(args.bbox))
 
 
-class LogEventHandler(pyinotify.ProcessEvent):
-    
-    def my_init(self, bucket=None, region=None):
-        """
-        This is automatically called from ProcessEvent.__init__()
-        """
-        self.bucket = bucket
-        self.s3 = S3Loader(bucket, region)
-        try:
-            self.s3.valid()
-        except EnvironmentError as e:
-            logger.error(e)
-            sys.exit(1)
+def listen(args):
+    LogListener(args).start()
 
-    def process_IN_MOVED_TO(self, event):
-        """
-        Log file was rotated. Send to s3
-        """
-        logger.debug("MOVED LOG {0} {1}".format(event.maskname, event.pathname))
-        if self.s3:
-            log = "Loading to S3 bucket {0}: {1}".format(self.bucket, event.pathname)
-            logger.info(log)
-            self.s3.store(event.pathname)
-            logger.info("Finished loading: {0}".format(event.pathname))
-
-
-class LogListener(object):
-    
-    def __init__(self, args):
-        """
-        Listen for changes to files in log_dir
-
-        When TwitterStream rotates a log the event handler will be called
-        The LogEventS3Handler will load the log file into a s3 bucket on AWS
-        """
-        self.log_dir = args.log_dir
-        wm = pyinotify.WatchManager()
-        handler = LogEventHandler(bucket=args.bucket, region=args.region)
-        self.notifier = pyinotify.Notifier(wm, handler)
-        wm.add_watch(self.log_dir, pyinotify.ALL_EVENTS)
-
-    def start(self):
-        #if not self:
-        #    logger.error("Environment Variable AWS_BUCKET not set")
-        #    sys.exit(1)
-        msg = "Start listening for events in directory: {0}"
-        logger.info(msg.format(self.log_dir))
-        self.notifier.loop()
-    
 
 if __name__ == "__main__":
     main()
