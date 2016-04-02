@@ -84,7 +84,7 @@ def stream(args):
     logger.info("Log Interval (min): {0}".format(args.log_interval))
     logger.info("Bounding Box: {0}".format(args.bbox))
     # setup log tweet handler and start streaming
-    handler = LogTweetHandler(log, interval=args.log_interval)
+    handler = LogTweetHandler(logfile=log, interval=args.log_interval)
     stream = TwitterStream()
     stream.start(handler, locations=build_bbox(args.bbox))
 
