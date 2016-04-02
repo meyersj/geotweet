@@ -14,7 +14,7 @@ from geotweet import LogListener
 
 
 # Bounding Box: [Lon,Lat SW corner, Lon,Lat NE corner]
-PORTLAND = ["-123.784828,44.683842", "-121.651703,46.188969"]
+PORTLAND = "-123.784828,44.683842,-121.651703,46.188969"
 US = "-125.0011,24.9493,-66.9326,49.5904"
 
 # get parameters from environment variables or set to defaults
