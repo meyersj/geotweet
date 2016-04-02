@@ -10,7 +10,7 @@ sys.path.append(root)
 from geotweet.handle import LogTweetHandler, Tweet
 
 
-TEST_STREAM = 'testdata/twitter-raw.log'
+TEST_STREAM = os.path.join(root, 'data/testdata/twitter-raw.log')
 
 
 class HandlerTests(unittest.TestCase):
