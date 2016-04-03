@@ -13,7 +13,7 @@ POLL_INTERVAL = 60
 
 class LogListener(object):
     
-    def __init__(self, log_dir, bucket, region, remove=True, poll=POLL_INTERVAL):
+    def __init__(self, log_dir, bucket, region, remove=False, poll=POLL_INTERVAL):
         """
         Listen for changes to files in log_dir
 
