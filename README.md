@@ -25,7 +25,7 @@ Installing this package will provide you with a python executable named `geotwee
 ### Usage
 
 ```
-geotweet stream|loader [parameters]
+geotweet stream|load [parameters]
 geotweet stream --help
 geotweet load --help
 ```
@@ -64,7 +64,7 @@ For `geotweet stream` the following environment variables must be set
 + `TWITTER_ACCESS_TOKEN_KEY`
 + `TWITTER_ACCESS_TOKEN_SECRET`
 
-For `geotweet listen` the following environment variables must be set
+For `geotweet load` the following environment variables must be set
 + `AWS_ACCESS_KEY_ID`
 + `AWS_SECRET_ACCESS_KEY`
 + `AWS_BUCKET` (if not provided as cli param)
@@ -89,15 +89,16 @@ export AWS_SECRET_ACCESS_KEY="..."
 # start streaming to log files rotate log file every 5 minutes
 geotweet stream --log-dir /tmp/geotweet --log-interval 5 &  
 
-# start listening for log rotations and load to S3
-geotweet listen --log-dir /tmp/geotweet --bucket already.created.bucket --region us-west-2 &
+# start loading archived log rotations to S3
+geotweet load --log-dir /tmp/geotweet --bucket already.created.bucket --region us-west-2 &
 ```
 
-To run as daemon on Ubuntu with Upstart copy `example_conf/streamer.conf` and `example_conf/s3listener.conf`
-to `/etc/init` and set the environment variables then run:
+To run as daemon on Ubuntu with Upstart copy
+`example_conf/geotweet-stream.conf` and `example_conf/geotweet-load.conf`
+to `/etc/init` and set the environment variables in those files then run:
 ```
-sudo service streamer start
-sudo service s3listener start
+sudo service geotweet-stream start
+sudo service geotweet-load start
 ```
 
 ### Data Pipeline
@@ -138,7 +139,7 @@ Example of log entry (1 line with pretty print)
 
 #### 2. Load Tweets into S3
 
-Run ```geotweet listen```
+Run ```geotweet load```
 
 Listen for log file rotations. Each archived file will be uploaded into an Amazon S3 Bucket.
 
