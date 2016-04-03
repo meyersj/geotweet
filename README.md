@@ -8,42 +8,103 @@ MIT License. Copyright (c) 2016 Jeffrey Alan Meyers. See `LICENSE.md`
 
 ### About
 
-This project contains python scripts to log tweets from the
+This project contains code to log tweets from the
 [Twitter Streaming API](https://dev.twitter.com/streaming/reference/post/statuses/filter)
 and load them into Amazon S3 Buckets.
+
 The log files in S3 are then used as input for Elastic MapReduce jobs.
 
-Also contains some scripts to extract POI nodes from OSM data and
-load into MongoDB, as well as loading US states and routes GeoJSON into MongoDB.
 
-### Dependencies
+### Install
 
-+ Dependencies for Ubuntu 14.04
-+ If you want to process OSM data you will also need to have a JRE and `Osmosis` installed
-```bash
-sudo apt-get update
-# for pip requirements
-sudo apt-get install \
-    git python-pip python-dev \
-    libgeos-dev libspatialindex-dev \       # for shapely and Rtree
-    libxml2-dev libxslt1-dev zlib1g-dev     # for lxml to read OSM data
+```
+pip install geotweet
 ```
 
+Installing this package will provide you with a python executable named `geotweet`.
 
-+ Clone
+### Usage
+
 ```
-git clone https://github.com/meyersj/geotweet.git
-cd geotweet
+geotweet stream|listen [parameters]
+geotweet stream --help
+geotweet listen --help
 ```
 
-+ Install python packages
+#### stream
 ```
-pip install -r requirements.txt   # it would be better to use a virtual environment
+usage: geotweet stream [-h] [--log-dir LOG_DIR] [--log-interval LOG_INTERVAL]
+                       [--bbox BBOX]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --log-dir LOG_DIR     Path to log file directoy
+  --log-interval LOG_INTERVAL
+                        Minutes in each log file
+  --bbox BBOX           Bounding Box as 'SW,NE' using 'Lon,Lat' for each point
+```
+
+#### listen
+```
+usage: geotweet listen [-h] [--log-dir LOG_DIR] [--bucket BUCKET]
+                       [--region REGION]
+
+optional arguments:
+  -h, --help         show this help message and exit
+  --log-dir LOG_DIR  Path to log file directoy
+  --bucket BUCKET    AWS S3 Bucket name
+ --region REGION    AWS S3 Region such as 'us-west-2'
+```
+
+#### Environment Variables
+
+For `geotweet stream` the following environment variables must be set
++ `TWITTER_CONSUMER_KEY`
++ `TWITTER_CONSUMER_SECRET`
++ `TWITTER_ACCESS_TOKEN_KEY`
++ `TWITTER_ACCESS_TOKEN_SECRET`
+
+For `geotweet listen` the following environment variables must be set
++ `AWS_ACCESS_KEY_ID`
++ `AWS_SECRET_ACCESS_KEY`
++ `AWS_BUCKET` (if not provided as cli param)
++ `AWS_DEFAULT_REGION` (if not provided as cli param)
+
+
+#### Example
+
+```
+pip install geotweet
+
+# Twitter
+export TWITTER_CONSUMER_KEY="..."
+export TWITTER_CONSUMER_SECRET="..."
+export TWITTER_ACCESS_TOKEN_KEY="..."
+export TWITTER_ACCESS_TOKEN_SECRET="..."
+
+# AWS
+export AWS_ACCESS_KEY_ID="..."
+export AWS_SECRET_ACCESS_KEY="..."
+
+# start streaming to log files rotate log file every 5 minutes
+geotweet stream --log-dir /tmp/geotweet --log-interval 5 &  
+
+# start listening for log rotations and load to S3
+geotweet listen --log-dir /tmp/geotweet --bucket already.created.bucket --region us-west-2 &
+```
+
+To run as daemon on Ubuntu copy `example_conf/streamer.conf` and `example_conf/s3listener.conf`
+to `/etc/init` and set the environment variables then run:
+```
+sudo service streamer start
+sudo service s3listener start
 ```
 
 ### Data Pipeline
 
-#### 1. Extract Geographic Tweets **(Daemon)**
+#### 1. Extract Geographic Tweets
+
+Run ```geotweet stream```
 
 Python script running on a cheap VPS (DigitalOcean) will connect to the
 *Twitter Streaming API* and filter for tweets inside Continental US.
@@ -52,22 +113,7 @@ For each tweet (if Lat-Lon coordinates are provided),
 extract fields, marshal as JSON and append to a log file.
 The log files are rotated every 60 minutes.
 
-**Run**
-```bash
-cat example_conf/streamer_envvars.sh >> ~/.bashrc
-vim ~/.bashrc                                           # set all of the environment variables
-source ~/.bashrc
-nosetests tests/envvar_tests.py:StreamerEnvvarTests     # check your environment variables
-python bin/streamer.py
-```
-
-**Run as Daemon using Upstart**
-```bash
-sudo cp example_conf/streamer.conf /etc/init/
-sudo vim /etc/init/streamer.conf      # set all of the environment variables
-sudo service streamer start
-```
-Example of log entry (1 line)
+Example of log entry (1 line with pretty print)
 ```
 {
    "source" : "<a href=\"http://www.tweet3po.org\" rel=\"nofollow\">Tweet3po</a>",
@@ -90,106 +136,38 @@ Example of log entry (1 line)
 ```
 
 
-#### 2. Load Tweets into S3 **(Daemon)**
+#### 2. Load Tweets into S3
 
-Another python script will be listening for the `streamer.py` log file rotations.
-Each archived file will be uploaded into an Amazon S3 Bucket.
+Run ```geotweet listen```
 
-**Run**
-```bash
-cat example_conf/s3listener_envvars.sh >> ~/.bashrc
-vim ~/.bashrc                                               # set all of the environment variables
-source ~/.bashrc
-nosetests tests/envvar_tests.py:S3ListenerEnvvarTests       # check your environment variables
-python bin/s3listener.py
-```
+Listen for log file rotations. Each archived file will be uploaded into an Amazon S3 Bucket.
 
-**Run as Daemon using Upstart**
-```bash
-sudo cp example_conf/s3listener.conf /etc/init/
-sudo vim /etc/init/s3listener.conf    # set all of the environment variables
-sudo service s3listener start
-```
-**NOTE:** The `streaming.py` script must be ran at least once before `s3listener.py` script
-to create the correct directory structure.
 
-#### 3. Process with EMR **(Batch)**
+#### 3. Process with EMR
 
 After log files have been collected for long enough run a Map Reduce
 job to count word occurences by each County, State and the entire US.
 
-+ See `geotweet/mapreduce/wordcount/geo.py` for GeoWordCount map reduce job
-+ See `bin/mapreduce_runner.sh` for an example of running local and EMR jobs
-+ See `example_conf/mrjob.conf` for config required to run an EMR job
-
-**Local**
-```bash
-nosetests tests/mapreduce                           # run some basic tests for geo.py MapReduce job
-cd geotweet/mapreduce/wordcount
-# run geo wordcount job with sample data
-python geo.py ../../../data/mapreduce/twitter-stream.log.2016-03-26_13-
-cd -
+```
+git clone https://github.com/meyersj/geotweet.git
+cd geotweet
+sudo pip install -r mapreduce_requirements.txt
+nosetests tests/mapreduce
 ```
 
-Output tuple has the form `([Word, State, County], Total)`
+Run **Local** Job
+```bash
+# run geo wordcount job with sample data
+python mapreduce/geo.py data/mapreduce/twitter-stream.log.2016-03-26_13-13
+```
 
-**EMR**
+Run **EMR** Job
 ```bash
 cp example_conf/mrjob.conf ~/.mrjob.conf
 vim ~/.mrjob.conf       # set all of the config parameters, make sure all example paths are corrected
-cd geotweet/mapreduce/wordcount
 src=s3://some.s3.bucket/input                               # folder containing logs from `streamer.py`
 dst=s3://some.s3.bucket/output/<new folder>                 # the new folder should not already exist
-python geo.py $src -r emr --output-dir=$dst --no-output     # supress output to stdout (will go to s3)   
+python mapreduce/geo.py $src -r emr --output-dir=$dst --no-output     # supress output to stdout (will go to s3)   
 ```
 
-### Load Geographic Data into MongoDB
-
-#### Build VM
-
-+ To build a local vm with Mongo DB, you need `virtualbox`/`vagrant` installed and the `ubuntu/trusty64` box
-```
-vagrant box add ubuntu/trusty64
-vagrant up                          # runs `bin/setup.py` to install dependencies and Mongo DB 
-```
-
-If everything worked, MongoDB should be accessible at `mongodb://127.0.0.1:27017`.
-
-```
-vagrant ssh
-
-# load mongo with geo data
-cd /vagrant/bin
-python loader.py osm [../data/states/states.txt]    # load OSM POI nodes (optional path to list of states to download)
-python loader.py boundary                           # load State and County GeoJSONs
-```
-
-#### Load OSM POI Data in MongoDB
-
-+ `java` and `osmosis` must be installed and on your path. [Osmosis Documentation](http://wiki.openstreetmap.org/wiki/Osmosis)
-+ MongoDB needs to be installed
-+ Environment variable `GEOTWEET_MONGODB_URI` must point to a live MongoDB instance
-
-Download osm data and extract POI nodes. Load each POI into MongoDB with
-spatial index.
-
-**Run**: `python bin/loader.py osm [/path/to/states.txt]`
-
-Optionally provide a list new line delimited US States.
-Defaults to `data/states.txt`
-
-Example:
-```txt
-Oregon
-Washington
-California
-```
-
-#### Load State and County Boundary Data in MongoDB
-
-+ Environment variable `GEOTWEET_MONGODB_URI` must point to a live MongoDB instance
-
-Load US states and counties boundary geometry as GeoJSON documents
-into MongoDB.
-
-**Run**: `python bin/loader.py boundary`
+Output tuples have the form `([Word, State, County], Total)`
