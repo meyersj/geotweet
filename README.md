@@ -157,7 +157,7 @@ nosetests tests/mapreduce
 
 Run **Local** Job
 ```bash
-# run geo wordcount job with sample data
+# start job
 python mapreduce/geo.py data/mapreduce/twitter-stream.log.2016-03-26_13-13
 ```
 
@@ -167,7 +167,9 @@ cp example_conf/mrjob.conf ~/.mrjob.conf
 vim ~/.mrjob.conf       # set all of the config parameters, make sure all example paths are corrected
 src=s3://some.s3.bucket/input                               # folder containing logs from `streamer.py`
 dst=s3://some.s3.bucket/output/<new folder>                 # the new folder should not already exist
-python mapreduce/geo.py $src -r emr --output-dir=$dst --no-output     # supress output to stdout (will go to s3)   
+
+# start job and supress stdout output (will go to s3) 
+python mapreduce/geo.py $src -r emr --output-dir=$dst --no-output       
 ```
 
 Output tuples have the form `([Word, State, County], Total)`
