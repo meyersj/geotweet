@@ -190,3 +190,12 @@ cd geotweet
 nosetests tests/geotweet        # requires environment variables listed above to be set
 nosetests tests/mapreduce
 ```
+
+### Virtual Machine
+
+To build a local virtual machine you need `virtualbox`/`vagrant` installed and a `ubuntu/trusty64` box
+```
+vagrant box add ubuntu/trusty64
+vagrant up
+vagrant ssh
+```
