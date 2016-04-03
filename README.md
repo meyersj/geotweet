@@ -58,13 +58,15 @@ optional arguments:
 
 #### Environment Variables
 
-For `geotweet stream` the following environment variables must be set
+For `geotweet stream` the following environment variables must be set.
+See `example_conf/stream-envvars.sh` for all options.
 + `TWITTER_CONSUMER_KEY`
 + `TWITTER_CONSUMER_SECRET`
 + `TWITTER_ACCESS_TOKEN_KEY`
 + `TWITTER_ACCESS_TOKEN_SECRET`
 
-For `geotweet load` the following environment variables must be set
+For `geotweet load` the following environment variables must be set.
+See `example_conf/load-envvars.sh` for all options.
 + `AWS_ACCESS_KEY_ID`
 + `AWS_SECRET_ACCESS_KEY`
 + `AWS_BUCKET` (if not provided as cli param)
