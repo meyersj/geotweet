@@ -6,3 +6,4 @@ function drop_db {
 
 drop_db osm
 drop_db boundary
+drop_db geotweet
