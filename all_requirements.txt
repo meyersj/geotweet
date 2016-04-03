@@ -9,4 +9,3 @@ Geohash==1.0
 Shapely==1.5.14
 Rtree==0.8.2
 lxml==3.6.0
-pyinotify==0.9.6
