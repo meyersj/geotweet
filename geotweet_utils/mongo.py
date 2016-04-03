@@ -3,7 +3,7 @@ import os
 import pymongo
 from pymongo import MongoClient
 
-from log import logger
+#from log import logger
 
 
 MONGODB_URI = os.getenv('GEOTWEET_MONGODB_URI', 'mongodb://127.0.0.1:27017')
@@ -17,8 +17,8 @@ class Mongo(object):
     """ Base wrapper class to connect to mongo and intialize a collection """
     
     def __init__(self, db=DB, uri=MONGODB_URI, collection=COLLECTION):
-        msg = "Setting up mongo client, uri={0}, db={1}, collection={2}"
-        logger.info(msg.format(uri, db, collection))
+        #msg = "Setting up mongo client, uri={0}, db={1}, collection={2}"
+        #logger.info(msg.format(uri, db, collection))
         timeout = DEFAULT_TIMEOUT
         args = dict(
             connectTimeoutMS=timeout,
@@ -33,8 +33,9 @@ class Mongo(object):
         try:
             self.collection.insert_one(data)
         except pymongo.errors.DuplicateKeyError as e:
-            logger.warn(str(e))
-            logger.warn("Record already exists in database. Skipping")
+            print e
+            #logger.warn(str(e))
+            #logger.warn("Record already exists in database. Skipping")
 
 
 class MongoGeo(Mongo):
