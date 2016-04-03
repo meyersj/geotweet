@@ -7,7 +7,6 @@ import shutil
 import boto3
 
 from log import logger
-from load import S3Loader
 
 
 POLL_INTERVAL = 60
