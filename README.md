@@ -41,7 +41,10 @@ optional arguments:
   --log-dir LOG_DIR     Path to log file directoy
   --log-interval LOG_INTERVAL
                         Minutes in each log file
-  --bbox BBOX           Bounding Box as 'SW,NE' using 'Lon,Lat' for each point
+  --bbox BBOX           Bounding Box as 'SW,NE' using 'Lon,Lat' for each
+                        point. Default=-125.0011,24.9493,-66.9326,49.5904
+                        (Continental US)
+
 ```
 
 #### listen
@@ -53,7 +56,7 @@ optional arguments:
   -h, --help         show this help message and exit
   --log-dir LOG_DIR  Path to log file directoy
   --bucket BUCKET    AWS S3 Bucket name
- --region REGION    AWS S3 Region such as 'us-west-2'
+  --region REGION    AWS S3 Region such as 'us-west-2'
 ```
 
 #### Environment Variables
