@@ -2,15 +2,13 @@ import unittest
 import os
 from os.path import dirname
 import sys
-from urllib2 import HTTPError
 
 from rtree import index
 
 root = dirname(dirname(dirname(os.path.abspath(__file__))))
 sys.path.append(root)
 
-from mapreduce.geo import MRGeoWordCount, GEOHASH_PRECISION
-from mapreduce.geo import SpatialLookup, RTREE_LOCATION
+from geotweet_utils.lookup import SpatialLookup
 
 
 GEOTWEET_DIR = root
