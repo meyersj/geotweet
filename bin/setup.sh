@@ -13,9 +13,11 @@ function dependencies {
         default-jre
 }
 
+
 function python_env {
-    pip install -r /vagrant/requirements.txt    
+    pip install -r /vagrant/all_requirements.txt    
 }
+
 
 function osmosis {
     cd /opt
@@ -29,6 +31,7 @@ function osmosis {
     cd -
 }
 
+
 function mongo {
     apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
     deb="deb http://repo.mongodb.org/apt/ubuntu trusty/mongodb-org/3.0 multiverse"
@@ -39,6 +42,7 @@ function mongo {
     sed -i 's/127\.0\.0\.1/0\.0\.0\.0/g' /etc/mongod.conf 
     service mongod restart
 }
+
 
 dependencies
 python_env
