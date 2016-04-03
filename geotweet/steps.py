@@ -16,7 +16,7 @@ class ProcessStep(object):
     def next(self, data):
         if self.next_step:
             return self.next_step.process(data)
-        return None
+        return data
 
     def process(self, step_input):
         """ Process input and and return output """ 
@@ -38,8 +38,9 @@ class GeoFilterStep(ProcessStep):
 
     def validate_geotweet(self, record):
         """ check that stream record is actual tweet with coordinates """
-        if record:
-            return self._validate('user', record) and self._validate('geo', record)
+        if record and  self._validate('user', record) \
+                and self._validate('coordinates', record):
+            return True
         return False
 
     def process(self, tweet):
@@ -79,7 +80,6 @@ class LogStep(ProcessStep):
     def __init__(self, logfile, log_interval=60, when="M"):
         if logfile:
             self.rotating_logger = get_rotating_logger(logfile, log_interval)
-            self.logfile = logfile
 
     def process(self, tweet):
         if tweet:
