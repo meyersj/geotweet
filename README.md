@@ -8,12 +8,9 @@ MIT License. Copyright (c) 2016 Jeffrey Alan Meyers. See `LICENSE.md`
 
 ### About
 
-NOTE: Project uses inotify which is only available on Linux 
-
 This project contains code to log tweets from the
 [Twitter Streaming API](https://dev.twitter.com/streaming/reference/post/statuses/filter)
 and load them into Amazon S3 Buckets.
-
 The log files in S3 are then used as input for Elastic MapReduce jobs.
 
 
