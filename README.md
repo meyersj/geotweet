@@ -184,5 +184,4 @@ cd geotweet
 # .. install all dependencies ...
 nosetests tests/geotweet        # requires environment variables listed above to be set
 nosetests tests/mapreduce
-nosetests tests/osm             # requires mongodb to be installed
 ```
