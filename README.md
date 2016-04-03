@@ -31,7 +31,7 @@ geotweet stream --help
 geotweet listen --help
 ```
 
-#### Usage: stream
+#### stream
 ```
 usage: geotweet stream [-h] [--log-dir LOG_DIR] [--log-interval LOG_INTERVAL]
                        [--bbox BBOX]
@@ -44,7 +44,7 @@ optional arguments:
   --bbox BBOX           Bounding Box as 'SW,NE' using 'Lon,Lat' for each point
 ```
 
-#### Usage: listen
+#### listen
 ```
 usage: geotweet listen [-h] [--log-dir LOG_DIR] [--bucket BUCKET]
                        [--region REGION]
@@ -58,19 +58,18 @@ optional arguments:
 
 #### Environment Variables
 
-For `geotweet stream` the folloing environment variables must be set
+For `geotweet stream` the following environment variables must be set
 + `TWITTER_CONSUMER_KEY`
 + `TWITTER_CONSUMER_SECRET`
 + `TWITTER_ACCESS_TOKEN_KEY`
 + `TWITTER_ACCESS_TOKEN_SECRET`
 
-For `geotweet listen` the folloing environment variables must be set
+For `geotweet listen` the following environment variables must be set
 + `AWS_ACCESS_KEY_ID`
 + `AWS_SECRET_ACCESS_KEY`
 + `AWS_BUCKET` (if not provided as cli param)
 + `AWS_DEFAULT_REGION` (if not provided as cli param)
 
-See `example_conf/streamer_envvars.sh` and `example_conf/s3listener_envvars.sh`.
 
 #### Example
 
@@ -87,8 +86,8 @@ export TWITTER_ACCESS_TOKEN_SECRET="..."
 export AWS_ACCESS_KEY_ID="..."
 export AWS_SECRET_ACCESS_KEY="..."
 
-# start streaming to log file
-geotweet stream --log-dir /tmp/geotweet --log-interval 5 &  # rotate log file every 5 minutes
+# start streaming to log files rotate log file every 5 minutes
+geotweet stream --log-dir /tmp/geotweet --log-interval 5 &  
 
 # start listening for log rotations and load to S3
 geotweet listen --log-dir /tmp/geotweet --bucket already.created.bucket --region us-west-2 &
