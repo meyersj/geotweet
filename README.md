@@ -8,6 +8,8 @@ MIT License. Copyright (c) 2016 Jeffrey Alan Meyers. See `LICENSE.md`
 
 ### About
 
+NOTE: Project uses inotify which is only available on Linux 
+
 This project contains code to log tweets from the
 [Twitter Streaming API](https://dev.twitter.com/streaming/reference/post/statuses/filter)
 and load them into Amazon S3 Buckets.
@@ -187,4 +189,15 @@ cd geotweet
 # .. install all dependencies ...
 nosetests tests/geotweet        # requires environment variables listed above to be set
 nosetests tests/mapreduce
+```
+
+### Virtual Machine
+
+To build a local virtual machine you need `virtualbox`/`vagrant` installed and a `ubuntu/trusty64` box
+```
+git clone https://github.com/meyersj/geotweet.git
+cd geotweet
+vagrant box add ubuntu/trusty64
+vagrant up
+vagrant ssh
 ```
