@@ -93,7 +93,7 @@ geotweet stream --log-dir /tmp/geotweet --log-interval 5 &
 geotweet listen --log-dir /tmp/geotweet --bucket already.created.bucket --region us-west-2 &
 ```
 
-To run as daemon on Ubuntu copy `example_conf/streamer.conf` and `example_conf/s3listener.conf`
+To run as daemon on Ubuntu with Upstart copy `example_conf/streamer.conf` and `example_conf/s3listener.conf`
 to `/etc/init` and set the environment variables then run:
 ```
 sudo service streamer start
