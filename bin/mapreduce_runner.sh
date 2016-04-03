@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SCRIPTDIR=`dirname $(readlink -f $0)`
-JOBDIR=`readlink -f ${SCRIPTDIR}/../geotweet/mapreduce/wordcount`
+JOBDIR=`readlink -f ${SCRIPTDIR}/../mapreduce`
 DATADIR=`readlink -f ${SCRIPTDIR}/../data/mapreduce`
 
 
