@@ -45,17 +45,20 @@ class TwitterStream(object):
                 logger.error(value)
                 raise EnvironmentError(value)
     
-    def stream(self, streamer, handler, timeout):
+    def stream(self, streamer, process_step=None, timeout=0):
         if timeout:
             stop = time.time() + timeout
         for record in streamer:
             if timeout and time.time() > stop:
                 break
-            handler.handle(record)
+            if process_step:
+                process_step.process(record)
+            else:
+                logger.info(json.dumps(record))
 
-    def start(self, handler, timeout=0, locations=None):
+    def start(self, process_step=None, timeout=0, locations=None):
         if locations:
             streamer = self.api.GetStreamFilter(locations=locations)
         else:
             streamer = self.api.GetStreamSample()
-        self.stream(streamer, handler, timeout)
+        self.stream(streamer, process_step=process_step, timeout=timeout)

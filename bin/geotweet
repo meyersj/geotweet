@@ -1,97 +1,63 @@
 #!../env/bin/python
 import os
 import sys
-import pyinotify
 import argparse
 
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(root)
 
-from geotweet import logger
-from geotweet import TwitterStream
-from geotweet import LogTweetHandler
-from geotweet import LogListener
+from geotweet import Geotweet
 
-
-# Bounding Box: [Lon,Lat SW corner, Lon,Lat NE corner]
-PORTLAND = "-123.784828,44.683842,-121.651703,46.188969"
-US = "-125.0011,24.9493,-66.9326,49.5904"
-
-# get parameters from environment variables or set to defaults
-LOG_DIR = os.getenv("GEOTWEET_STREAM_DIR", "/tmp/geotweet")
-LOG_INTERVAL = int(os.getenv("GEOTWEET_STREAM_LOG_INTERVAL", 5))
+# get any parameters set as environment variables
+LOG_DIR = os.getenv("GEOTWEET_STREAM_DIR", None)
+LOG_INTERVAL = os.getenv("GEOTWEET_STREAM_LOG_INTERVAL", None)
 AWS_BUCKET = os.getenv("AWS_BUCKET", None)
 AWS_REGION = os.getenv("AWS_DEFAULT_REGION", None)
 
 
+# ======================
+# Command Line Arguments
+# ======================
+
+# help messages
+log_help = "Path to log file directoy"
+log_interval_help = "Minutes in each log file"
+bbox_help = "Bounding Box as 'SW,NE' using 'Lon,Lat' for each point."
+bucket_help = "AWS S3 Bucket name"
+region_help = "AWS S3 Region such as 'us-west-2'"
+
+# construct keywords argumets for each cli arg
+log_args = dict(type=str, default=LOG_DIR, help=log_help)
+log_interval_args = dict(type=int, default=LOG_INTERVAL, help=log_interval_help)
+bbox_args = dict(type=str, help=bbox_help)
+bucket_args = dict(type=str, default=AWS_BUCKET, help=bucket_help)
+region_args = dict(type=str, default=AWS_REGION, help=region_help)
+
+# build parser
+parser = argparse.ArgumentParser(description='Log and store geographic tweets')
+subparser = parser.add_subparsers()
+
+# add stream args
+stream_parser = subparser.add_parser('stream')
+stream_parser.set_defaults(which='stream')
+stream_parser.add_argument('--log-dir', **log_args)
+stream_parser.add_argument('--log-interval', **log_interval_args)
+stream_parser.add_argument('--bbox', **bbox_args)
+
+# add listen args
+listen_parser = subparser.add_parser('listen')
+listen_parser.set_defaults(which='listen')
+listen_parser.add_argument('--log-dir', **log_args)
+listen_parser.add_argument('--bucket', **bucket_args)
+listen_parser.add_argument('--region', **region_args)
+
+
 def main():
-    args = parser().parse_args()
+    args = parser.parse_args()
     if args.which == 'stream':
-        stream(args)
+        Geotweet(args).stream()
     elif args.which == 'listen':
-        listen(args)
-
-
-def parser():
-    # help messages
-    log_help = "Path to log file directoy"
-    log_interval_help = "Minutes in each log file"
-    bbox_help = "Bounding Box as 'SW,NE' using 'Lon,Lat' for each point."
-    bbox_help += " Default={0} (Continental US)".format(US)
-    bucket_help = "AWS S3 Bucket name"
-    region_help = "AWS S3 Region such as 'us-west-2'"
-    # keywords args for adding arguments
-    log_args = dict(type=str, default=LOG_DIR, help=log_help)
-    log_interval_args = dict(type=int, default=LOG_INTERVAL, help=log_interval_help)
-    bbox_args = dict(type=str, default=US, help=bbox_help)
-    bucket_args = dict(type=str, default=AWS_BUCKET, help=bucket_help)
-    region_args = dict(type=str, default=AWS_REGION, help=region_help)
-    # build parser
-    parser = argparse.ArgumentParser(description='Log and store geographic tweets')
-    subparser = parser.add_subparsers()
-    # stream arguments
-    stream_parser = subparser.add_parser('stream')
-    stream_parser.set_defaults(which='stream')
-    stream_parser.add_argument('--log-dir', **log_args)
-    stream_parser.add_argument('--log-interval', **log_interval_args)
-    stream_parser.add_argument('--bbox', **bbox_args)
-    # listen arguments
-    listen_parser = subparser.add_parser('listen')
-    listen_parser.set_defaults(which='listen')
-    listen_parser.add_argument('--log-dir', **log_args)
-    listen_parser.add_argument('--bucket', **bucket_args)
-    listen_parser.add_argument('--region', **region_args)
-    return parser
-
-
-def build_bbox(bbox):
-    # build bounding box from bbox argument
-    coords = [ coord.strip() for coord in bbox.split(',') ]
-    if len(coords) != 4:
-        error = "--bbox must be in the form 'sw-x,sw-y,ne-x,ne-y'"
-        raise ValueError(error.format(bbox))
-    return [coords[0] + "," + coords[1], coords[2] + "," + coords[3]]
-
-
-def stream(args):
-    try:
-        os.mkdir(args.log_dir)
-    except OSError:
-        log = "Output log directory < {0} > already exists".format(args.log_dir)
-        logger.debug(log)
-    log = os.path.join(args.log_dir, 'twitter-stream.log')
-    logger.info("Starting Twitter Streaming API")
-    logger.info("Streaming to output log: {0}".format(log))
-    logger.info("Log Interval (min): {0}".format(args.log_interval))
-    logger.info("Bounding Box: {0}".format(args.bbox))
-    # setup log tweet handler and start streaming
-    handler = LogTweetHandler(logfile=log, interval=args.log_interval)
-    stream = TwitterStream()
-    stream.start(handler, locations=build_bbox(args.bbox))
-
-
-def listen(args):
-    LogListener(args).start()
+        Geotweet(args).listen()
 
 
 if __name__ == "__main__":

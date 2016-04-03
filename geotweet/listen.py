@@ -2,31 +2,26 @@ import os
 import sys
 import pyinotify
 
-root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(root)
-
-from geotweet.log import logger
-from geotweet.load import S3Loader
+from log import logger
+from load import S3Loader
 
 
 class LogListener(object):
     
-    def __init__(self, args):
+    def __init__(self, log_dir, bucket, region):
         """
         Listen for changes to files in log_dir
 
         When TwitterStream rotates a log the event handler will be called
         The LogEventS3Handler will load the log file into a s3 bucket on AWS
         """
-        self.log_dir = args.log_dir
+        self.log_dir = log_dir
         wm = pyinotify.WatchManager()
-        handler = LogEventHandler(bucket=args.bucket, region=args.region)
+        handler = LogEventHandler(bucket=bucket, region=region)
         self.notifier = pyinotify.Notifier(wm, handler)
         wm.add_watch(self.log_dir, pyinotify.ALL_EVENTS)
 
     def start(self):
-        msg = "Start listening for events in directory: {0}"
-        logger.info(msg.format(self.log_dir))
         self.notifier.loop()
 
 
