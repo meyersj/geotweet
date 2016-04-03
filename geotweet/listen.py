@@ -1,14 +1,19 @@
 import os
 import sys
-import pyinotify
+import glob
+import time
+import shutil
 
 from log import logger
 from load import S3Loader
 
 
+POLL_INTERVAL = 60
+
+
 class LogListener(object):
     
-    def __init__(self, log_dir, bucket, region):
+    def __init__(self, log_dir, bucket, region, remove=True, poll=POLL_INTERVAL):
         """
         Listen for changes to files in log_dir
 
@@ -16,36 +21,43 @@ class LogListener(object):
         The LogEventS3Handler will load the log file into a s3 bucket on AWS
         """
         self.log_dir = log_dir
-        wm = pyinotify.WatchManager()
-        handler = LogEventHandler(bucket=bucket, region=region)
-        self.notifier = pyinotify.Notifier(wm, handler)
-        wm.add_watch(self.log_dir, pyinotify.ALL_EVENTS)
-
-    def start(self):
-        self.notifier.loop()
-
-
-class LogEventHandler(pyinotify.ProcessEvent):
-    
-    def my_init(self, bucket=None, region=None):
-        """
-        This is automatically called from ProcessEvent.__init__()
-        """
         self.bucket = bucket
         self.s3 = S3Loader(bucket, region)
+        self.poll = poll
+        self.remove = remove
         try:
             self.s3.valid()
         except EnvironmentError as e:
             logger.error(e)
             sys.exit(1)
 
-    def process_IN_MOVED_TO(self, event):
-        """
-        Log file was rotated. Send to s3
-        """
-        logger.debug("MOVED LOG {0} {1}".format(event.maskname, event.pathname))
-        if self.s3:
-            log = "Loading to S3 bucket {0}: {1}".format(self.bucket, event.pathname)
-            logger.info(log)
-            self.s3.store(event.pathname)
-            logger.info("Finished loading: {0}".format(event.pathname))
+    def start(self):
+        if not os.path.isdir(self.log_dir):
+            msg = "Directory < {0} > does not exist".format(self.log_dir)
+            logger.error(msg)
+            sys.exit(1)
+
+        pattern = 'twitter-stream.log.*'
+        while True:
+            for log in glob.glob(os.path.join(self.log_dir, pattern)):
+                self.load(log)
+            time.sleep(self.poll)
+
+    def load(self, log):
+        if not self.s3:
+            return
+        msg = "Loading {0} to S3 bucket {1}".format(log, self.bucket)
+        logger.info(msg)
+        self.s3.store(log)
+        logger.info("Success loading {0}".format(log))
+        self.archive(log)
+
+    def archive(self, log):
+        if not self.remove:
+            filepath = os.path.dirname(log)
+            filename = os.path.basename(log)
+            archive = os.path.join(filepath, 'loaded.{0}'.format(filename))
+            logger.info("Archiving {0} to {1}".format(log, archive))
+            shutil.copyfile(log, archive)
+        logger.info("Removing log file {0}".format(log))
+        os.remove(log)
