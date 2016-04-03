@@ -45,8 +45,8 @@ stream_parser.add_argument('--log-interval', **log_interval_args)
 stream_parser.add_argument('--bbox', **bbox_args)
 
 # add listen args
-listen_parser = subparser.add_parser('listen')
-listen_parser.set_defaults(which='listen')
+listen_parser = subparser.add_parser('load')
+listen_parser.set_defaults(which='load')
 listen_parser.add_argument('--log-dir', **log_args)
 listen_parser.add_argument('--bucket', **bucket_args)
 listen_parser.add_argument('--region', **region_args)
@@ -56,8 +56,8 @@ def main():
     args = parser.parse_args()
     if args.which == 'stream':
         Geotweet(args).stream()
-    elif args.which == 'listen':
-        Geotweet(args).listen()
+    elif args.which == 'load':
+        Geotweet(args).load()
 
 
 if __name__ == "__main__":

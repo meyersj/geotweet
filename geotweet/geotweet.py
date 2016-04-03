@@ -8,7 +8,7 @@ sys.path.append(root)
 
 from log import logger
 from stream import TwitterStream
-from listen import LogListener
+from load import LogListener
 from steps import GeoFilterStep, ExtractStep, LogStep
 
 
@@ -81,7 +81,7 @@ class Geotweet(object):
         # start Twitter Streaming API (does not return)
         TwitterStream().start(process_step=self.starting_step, locations=self.bbox)
 
-    def listen(self):
+    def load(self):
         msg = "Start listening for events in directory: {0}"
         logger.info(msg.format(self.log_dir))
         logger.info("AWS Bucket: {0}".format(self.bucket))
