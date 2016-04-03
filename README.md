@@ -195,6 +195,8 @@ nosetests tests/mapreduce
 
 To build a local virtual machine you need `virtualbox`/`vagrant` installed and a `ubuntu/trusty64` box
 ```
+git clone https://github.com/meyersj/geotweet.git
+cd geotweet
 vagrant box add ubuntu/trusty64
 vagrant up
 vagrant ssh
