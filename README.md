@@ -173,3 +173,16 @@ python mapreduce/geo.py $src -r emr --output-dir=$dst --no-output
 ```
 
 Output tuples have the form `([Word, State, County], Total)`
+
+
+### Tests
+
+Tests available to run after cloning and installing dependencies
+```
+git clone https://github.com/meyersj/geotweet.git
+cd geotweet
+# .. install all dependencies ...
+nosetests tests/geotweet        # requires environment variables listed above to be set
+nosetests tests/mapreduce
+nosetests tests/osm             # requires mongodb to be installed
+```
