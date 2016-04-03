@@ -25,9 +25,9 @@ Installing this package will provide you with a python executable named `geotwee
 ### Usage
 
 ```
-geotweet stream|listen [parameters]
+geotweet stream|loader [parameters]
 geotweet stream --help
-geotweet listen --help
+geotweet load --help
 ```
 
 #### stream
@@ -41,15 +41,13 @@ optional arguments:
   --log-interval LOG_INTERVAL
                         Minutes in each log file
   --bbox BBOX           Bounding Box as 'SW,NE' using 'Lon,Lat' for each
-                        point. Default=-125.0011,24.9493,-66.9326,49.5904
-                        (Continental US)
-
+                        point.
 ```
 
-#### listen
+#### load
 ```
-usage: geotweet listen [-h] [--log-dir LOG_DIR] [--bucket BUCKET]
-                       [--region REGION]
+usage: geotweet load [-h] [--log-dir LOG_DIR] [--bucket BUCKET]
+                     [--region REGION]
 
 optional arguments:
   -h, --help         show this help message and exit
