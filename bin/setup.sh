@@ -33,9 +33,9 @@ function osmosis {
 
 
 function mongo {
-    apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
-    deb="deb http://repo.mongodb.org/apt/ubuntu trusty/mongodb-org/3.0 multiverse"
-    echo "${deb}" | tee /etc/apt/sources.list.d/mongodb-org-3.0.list
+    apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv EA312927
+    deb="deb http://repo.mongodb.org/apt/ubuntu trusty/mongodb-org/3.2 multiverse"
+    echo "${deb}" | tee /etc/apt/sources.list.d/mongodb-org-3.2.list
     apt-get update
     apt-get install -y mongodb-org
     # listen on all interfaces
