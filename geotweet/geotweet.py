@@ -6,10 +6,10 @@ import argparse
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(root)
 
-from log import logger
-from stream import TwitterStream
-from load import LogListener
-from steps import GeoFilterStep, ExtractStep, LogStep
+from twitter import TwitterStream, LogListener, GeoFilterStep, ExtractStep, LogStep
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 # Bounding Box: [Lon,Lat SW corner, Lon,Lat NE corner]
