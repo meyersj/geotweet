@@ -1,6 +1,16 @@
 import json
+from logging.handlers import TimedRotatingFileHandler
 
-from log import logger, get_rotating_logger
+import logging
+logger = logging.getLogger(__name__)
+
+
+def get_rotating_logger(logfile, interval, when="M"):
+    rot_logger = logging.getLogger('twitter-stream')
+    rot_logger.setLevel(logging.INFO)
+    handler = TimedRotatingFileHandler(logfile, when=when, interval=interval)
+    rot_logger.addHandler(handler)
+    return rot_logger
 
 
 class ProcessStep(object):

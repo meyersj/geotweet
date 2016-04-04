@@ -2,9 +2,10 @@ import os
 import sys
 import time
 
-import twitter
+import twitter as twitter
 
-from log import logger
+import logging
+logger = logging.getLogger(__name__)
 
 
 class TwitterClient(object):
