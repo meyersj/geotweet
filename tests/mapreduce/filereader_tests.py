@@ -7,8 +7,8 @@ from urllib2 import HTTPError
 root = dirname(dirname(dirname(os.path.abspath(__file__))))
 sys.path.append(root)
 
-from geotweet_utils.reader import FileReader
-from geotweet_utils.words import STOPWORDS_LIST_URL
+from geotweet.mapreduce.utils.reader import FileReader
+from geotweet.mapreduce.utils.words import STOPWORDS_LIST_URL
 
 
 GEOTWEET_DIR = root

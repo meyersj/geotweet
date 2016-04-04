@@ -8,7 +8,7 @@ from rtree import index
 root = dirname(dirname(dirname(os.path.abspath(__file__))))
 sys.path.append(root)
 
-from geotweet_utils.lookup import SpatialLookup
+from geotweet.mapreduce.utils.lookup import SpatialLookup
 
 
 GEOTWEET_DIR = root
