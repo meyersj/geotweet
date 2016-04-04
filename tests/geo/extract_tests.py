@@ -7,7 +7,7 @@ import subprocess
 root = dirname(dirname(dirname(os.path.abspath(__file__))))
 sys.path.append(root)
 
-from geotweet.osm.extract import Extractor
+from geotweet.geo.extract import Extractor
 
 
 class ExtractorTests(unittest.TestCase):

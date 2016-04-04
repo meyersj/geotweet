@@ -6,8 +6,8 @@ import sys
 root = dirname(dirname(dirname(os.path.abspath(__file__))))
 sys.path.append(root)
 
-from geotweet.osm.download import Downloader
-from geotweet.osm.download import US_GEOFABRIK
+from geotweet.geo.download import Downloader
+from geotweet.geo.download import US_GEOFABRIK
 
 
 class DownloaderTests(unittest.TestCase):
