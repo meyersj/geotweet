@@ -44,7 +44,6 @@ class OSMLoader(object):
                 # call load function with data (usually write to database)
                 data = self._build_data(elem)
                 load_func(data)
-
             # subtree has been fully processed so clear from memory
             if elem.tag in ["node", "way", "relation"]:
                 elem.clear()

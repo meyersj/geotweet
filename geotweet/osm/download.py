@@ -3,7 +3,8 @@ import re
 
 import requests
 
-from log import logger
+import logging
+logger = logging.getLogger(__name__)
 
 
 US_GEOFABRIK = 'http://download.geofabrik.de/north-america/us/{0}-latest.osm.pbf'
