@@ -3,14 +3,14 @@ import json
 import os
 from os.path import dirname
 import sys
-
-root = dirname(dirname(dirname(os.path.abspath(__file__))))
-sys.path.append(root)
+import inspect
 
 from geotweet.twitter.steps import GeoFilterStep, ExtractStep, LogStep
 
 
-TEST_STREAM = os.path.join(root, 'data/testdata/twitter-raw.log')
+import geotweet
+root = os.path.dirname(inspect.getfile(geotweet))
+TEST_STREAM = os.path.join(root, 'data/twitter-api-stream-raw.log')
 
 
 class GeoFilterStepTests(unittest.TestCase):
