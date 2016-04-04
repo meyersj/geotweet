@@ -7,8 +7,9 @@ import sys
 root = dirname(dirname(dirname(os.path.abspath(__file__))))
 sys.path.append(root)
 
-from geotweet.stream import TwitterStream
-from geotweet.steps import ProcessStep
+from geotweet.twitter.stream import TwitterStream
+from geotweet.twitter.steps import ProcessStep
+
 
 TIMEOUT = 1
 BBOX = ["-125.0011,24.9493", "-66.9326,49.5904"]

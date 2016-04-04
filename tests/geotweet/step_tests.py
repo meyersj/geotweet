@@ -7,7 +7,7 @@ import sys
 root = dirname(dirname(dirname(os.path.abspath(__file__))))
 sys.path.append(root)
 
-from geotweet.steps import GeoFilterStep, ExtractStep, LogStep
+from geotweet.twitter.steps import GeoFilterStep, ExtractStep, LogStep
 
 
 TEST_STREAM = os.path.join(root, 'data/testdata/twitter-raw.log')
