@@ -9,12 +9,12 @@ from mrjob.step import MRStep
 
 import Geohash
 
-root = dirname(dirname(os.path.abspath(__file__)))
-sys.path.append(root)
+#root = dirname(dirname(os.path.abspath(__file__)))
+#sys.path.append(root)
 
-from geotweet_utils.reader import FileReader
-from geotweet_utils.words import WordExtractor
-from geotweet_utils.lookup import CachedCountyLookup
+from utils.reader import FileReader
+from utils.words import WordExtractor
+from utils.lookup import CachedCountyLookup
 
 
 """
