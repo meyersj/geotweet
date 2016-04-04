@@ -1,0 +1,2 @@
+include geotweet/data/states/*
+include geotweet/data/stopwords.txt
