@@ -2,19 +2,23 @@
 import sys
 import os
 import argparse
+import inspect
 
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(root)
 
 from geotweet.geo import OSM, Geo
 
+import geotweet
+root = os.path.dirname(inspect.getfile(geotweet))
+DATA_DIR = os.path.join(root, 'data')
+
 
 # default parameters
-DATA_DIR = os.path.join(root, 'data')
 DEFAULT_MONGODB_URI = 'mongodb://127.0.0.1:27017'
 MONGODB_URI = os.getenv('GEOTWEET_MONGODB_URI', DEFAULT_MONGODB_URI)
 DEFAULT_DB = 'geotweet'
-DEFAULT_OUT_DIR = os.path.join(root, 'output/poi')
+DEFAULT_OUT_DIR = '/tmp/geotweet/poi'
 DEFAULT_STATES = os.path.join(DATA_DIR, 'states/states.txt')
 
 
