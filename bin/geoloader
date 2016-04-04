@@ -1,0 +1,75 @@
+#!../env/bin/python
+import sys
+import os
+import argparse
+
+root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(root)
+
+from geotweet.geo import OSM, Geo
+
+
+# default parameters
+DATA_DIR = os.path.join(root, 'data')
+DEFAULT_MONGODB_URI = 'mongodb://127.0.0.1:27017'
+MONGODB_URI = os.getenv('GEOTWEET_MONGODB_URI', DEFAULT_MONGODB_URI)
+DEFAULT_DB = 'geotweet'
+DEFAULT_OUT_DIR = os.path.join(root, 'output/poi')
+DEFAULT_STATES = os.path.join(DATA_DIR, 'states/states.txt')
+
+
+# ======================
+# Command Line Arguments
+# ======================
+
+# help messages
+mongo_help = "MongodDB URI (default={0})".format(DEFAULT_MONGODB_URI)
+db_help = "Name of db (default={0})".format(DEFAULT_DB)
+output_help = "Location of output files (default={0})".format(DEFAULT_OUT_DIR)
+collection_help = "Name of collection"
+geojson_help = "Path to geojson file"
+states_help = "File containing list of states to download and load"
+
+# construct keywords argumets for each cli arg
+output_args = dict(type=str, default=DEFAULT_OUT_DIR, help=output_help)
+geojson_args = dict(type=str, help=geojson_help)
+mongo_args = dict(type=str, default=DEFAULT_MONGODB_URI, help=mongo_help)
+db_args = dict(type=str, default=DEFAULT_DB, help=db_help)
+collection_args = dict(type=str, help=collection_help)
+states_args = dict(type=str, default=DEFAULT_STATES, help=states_help)
+
+# build parser
+parser = argparse.ArgumentParser(description='Log geographic data into MongoDB')
+subparser = parser.add_subparsers()
+
+# add stream args
+osm_parser = subparser.add_parser('osm')
+osm_parser.set_defaults(which='osm')
+osm_parser.add_argument('collection', **collection_args)
+osm_parser.add_argument('--output', **output_args)
+osm_parser.add_argument('--states', **states_args)
+osm_parser.add_argument('--mongo', **mongo_args)
+osm_parser.add_argument('--db', **db_args)
+
+# add listen args
+geojson_parser = subparser.add_parser('geojson')
+geojson_parser.set_defaults(which='geojson')
+geojson_parser.add_argument('file', **geojson_args)
+geojson_parser.add_argument('collection', **collection_args)
+geojson_parser.add_argument('--mongo', **mongo_args)
+geojson_parser.add_argument('--db', **db_args)
+
+
+def main():
+    args = parser.parse_args()
+    if args.which == 'osm':
+        # download osm extracts of states listed in file passed as parameter
+        # and load into MongoDB
+        OSM(args).run()
+    elif args.which == 'geojson':
+        # load geojson into MongoDB 
+        Geo(args).run()
+
+
+if __name__ == '__main__':
+    main()

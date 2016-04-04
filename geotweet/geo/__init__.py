@@ -11,18 +11,21 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+DEFAULT_POI_TAGS = ['amenity', 'builing', 'shop', 'office', 'tourism']
+
+
 class Geo(object):
     
     def __init__(self, args):
         self.source = args.file
-        iself.mongo = args.mongo
+        self.mongo = args.mongo
         self.db = args.db
         self.collection = args.collection
 
     def run(self):
         """ Top level runner to load State and County  GeoJSON files into Mongo DB """
-        logger.info("Starting States and Counties GeoJSON MongoDB DB loading process.")
-        mongo = dict(uri=args.mongo, db=args.db, collection=args.collection) 
+        logger.info("Starting GeoJSON MongoDB loading process.")
+        mongo = dict(uri=self.mongo, db=self.db, collection=self.collection)
         self.load(self.source, **mongo)
         logger.info("Finished loading {0} into MongoDB".format(self.source))
 
@@ -99,7 +102,7 @@ class OSM(object):
         poi_files = Extractor(tags=DEFAULT_POI_TAGS).extract(pbf_extracts, outdir)
         return poi_files
 
-    def load(poi_files, uri=None, db='osm', collection=None):
+    def load(self, poi_files, uri=None, db='osm', collection=None):
         """ Read each osm file and convert each node to json and load into mongo """
         logger.info("Mongo URI: {0}".format(uri))
         logger.info("Mongo DB: {0}".format(db))
