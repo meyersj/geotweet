@@ -12,7 +12,7 @@ from geotweet.mapreduce.utils.lookup import SpatialLookup
 
 
 GEOTWEET_DIR = root
-TEST_GEOJSON_LOCAL = os.path.join(GEOTWEET_DIR, 'data/geo/us_states.json') 
+TEST_GEOJSON_LOCAL = os.path.join(GEOTWEET_DIR, 'data/geo/us_states.geojson') 
 MAX_COUNT = 100
 RESULTS_COUNT = 51
 PORTLAND = (-122.5, 45.5)

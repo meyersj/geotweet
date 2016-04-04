@@ -11,7 +11,7 @@ root = dirname(dirname(dirname(os.path.abspath(__file__))))
 sys.path.append(root)
 
 GEOTWEET_DIR = root
-COUNTIES_GEOJSON_LOCAL = os.path.join(GEOTWEET_DIR, 'data/geo/us_counties.json')
+COUNTIES_GEOJSON_LOCAL = os.path.join(GEOTWEET_DIR, 'data/geo/us_counties.geojson')
 os.environ['COUNTIES_GEOJSON_LOCAL'] = COUNTIES_GEOJSON_LOCAL
 
 # COUNTIES_GEOJSON_LOCAL environment variable must be set before import
