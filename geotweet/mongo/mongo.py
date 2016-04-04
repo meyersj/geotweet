@@ -36,8 +36,8 @@ class Mongo(object):
             logger.warn(str(e))
             logger.warn("Record already exists in database. Skipping")
         except pymongo.errors.WriteError as e:
-            logger.error(str(e))
-            logger.error("Write Error")
+            logger.warn(str(e))
+            logger.warn("Write Error")
 
 
 class MongoGeo(Mongo):
