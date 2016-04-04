@@ -6,7 +6,7 @@ import argparse
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(root)
 
-from geotweet import Geotweet
+from geotweet.twitter import Geotweet
 
 # get any parameters set as environment variables
 LOG_DIR = os.getenv("GEOTWEET_STREAM_DIR", None)
