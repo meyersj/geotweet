@@ -15,7 +15,7 @@ COUNTIES_GEOJSON_LOCAL = os.path.join(GEOTWEET_DIR, 'data/geo/us_counties.json')
 os.environ['COUNTIES_GEOJSON_LOCAL'] = COUNTIES_GEOJSON_LOCAL
 
 # COUNTIES_GEOJSON_LOCAL environment variable must be set before import
-from mapreduce.geo import MRGeoWordCount, GEOHASH_PRECISION
+from geotweet.mapreduce.geo import MRGeoWordCount, GEOHASH_PRECISION
 
 
 def build_input(text, desc="My Account", lonlat=[-122.5, 45.4]):
