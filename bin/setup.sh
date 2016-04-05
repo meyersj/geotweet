@@ -6,28 +6,12 @@ function dependencies {
     apt-get update
     apt-get install -y \
         python-pip python-dev \
-        libgeos-dev libspatialindex-dev \
-        libxml2-dev libxslt1-dev \
-        libffi-dev
+        libgeos-dev libspatialindex-dev
 }
 
 
 function python_env {
     pip install -r /vagrant/requirements.txt
-}
-
-
-function osmosis {
-    apt-get install default-jre
-    cd /opt
-    mkdir -p /opt/osmosis
-    cd /opt/osmosis
-    wget http://bretth.dev.openstreetmap.org/osmosis-build/osmosis-latest.tgz
-    tar xvfz osmosis-latest.tgz
-    rm osmosis-latest.tgz
-    chmod a+x bin/osmosis
-    ln -s ${PWD}/bin/osmosis /usr/bin/osmosis
-    cd -
 }
 
 
@@ -45,5 +29,4 @@ function mongo {
 
 dependencies
 python_env
-osmosis
 mongo
