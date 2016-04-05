@@ -1,9 +1,7 @@
 #!/bin/bash
 
 
-function drop_db {
-    mongo ${1} --eval "db.dropDatabase();"
-}
+source ./clear_db
 
 
 db=geotweet
