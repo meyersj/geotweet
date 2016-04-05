@@ -6,7 +6,7 @@ except ImportError:
 
 setup(
     name='geotweet',
-    version='0.1.11',
+    version='0.1.12',
     description='Fetch geographic tweets from Twitter Streaming API',
     author='Jeffrey Alan Meyers',
     author_email='jeffrey.alan.meyers@gmail.com',
@@ -21,7 +21,7 @@ setup(
     scripts=['bin/geotweet'],
     include_package_data=True,
     install_requires=[
-        'setuptools',
+        'setuptools>=7.0',
         'argparse',
         'boto3',
         'mrjob',
