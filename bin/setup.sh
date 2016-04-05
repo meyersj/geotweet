@@ -12,6 +12,7 @@ function dependencies {
 
 function python_env {
     pip install -r /vagrant/requirements.txt
+    pip install geotweet
 }
 
 
