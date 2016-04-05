@@ -15,7 +15,8 @@ COUNTIES_GEOJSON_LOCAL = os.path.join(GEOTWEET_DIR, 'data/geo/us_counties.geojso
 os.environ['COUNTIES_GEOJSON_LOCAL'] = COUNTIES_GEOJSON_LOCAL
 
 # COUNTIES_GEOJSON_LOCAL environment variable must be set before import
-from geotweet.mapreduce.geo import MRGeoWordCount, GEOHASH_PRECISION
+from geotweet.mapreduce.state_county_wordcount import MRStateCountyWordCount
+from geotweet.mapreduce.state_county_wordcount import GEOHASH_PRECISION
 
 
 def build_input(text, desc="My Account", lonlat=[-122.5, 45.4]):
@@ -29,7 +30,7 @@ def build_input(text, desc="My Account", lonlat=[-122.5, 45.4]):
 class MapperTweetTests(unittest.TestCase):
 
     def setUp(self):
-        self.mr = MRGeoWordCount()
+        self.mr = MRStateCountyWordCount()
         self.mr.mapper_init()
 
     def test_valid_1(self):
@@ -49,7 +50,7 @@ class MapperTweetTests(unittest.TestCase):
             mapper = self.mr.mapper(*src)
             while True:
                 output = mapper.next()
-                exists = any(output[0].startswith(word) for word in accept_words)
+                exists = any(output[0][0].startswith(word) for word in accept_words)
                 error = "Unexpected output tuple < {0} >"
                 self.assertTrue(exists, error.format(output))
         except StopIteration:

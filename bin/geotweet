@@ -7,12 +7,17 @@ root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(root)
 
 from geotweet.twitter import Geotweet
+from geotweet.geomongo import GeoMongo
+
 
 # get any parameters set as environment variables
 LOG_DIR = os.getenv("GEOTWEET_STREAM_DIR", None)
 LOG_INTERVAL = os.getenv("GEOTWEET_STREAM_LOG_INTERVAL", None)
 AWS_BUCKET = os.getenv("AWS_BUCKET", None)
 AWS_REGION = os.getenv("AWS_DEFAULT_REGION", None)
+DEFAULT_MONGODB_URI = 'mongodb://127.0.0.1:27017'
+MONGODB_URI = os.getenv('GEOTWEET_MONGODB_URI', DEFAULT_MONGODB_URI)
+DEFAULT_DB = 'geotweet'
 
 
 # ======================
@@ -25,6 +30,10 @@ log_interval_help = "Minutes in each log file"
 bbox_help = "Bounding Box as 'SW,NE' using 'Lon,Lat' for each point."
 bucket_help = "AWS S3 Bucket name"
 region_help = "AWS S3 Region such as 'us-west-2'"
+mongo_help = "MongodDB URI (default={0})".format(DEFAULT_MONGODB_URI)
+db_help = "Name of db (default={0})".format(DEFAULT_DB)
+collection_help = "Name of collection"
+geojson_help = "Path to geojson file"
 
 # construct keywords argumets for each cli arg
 log_args = dict(type=str, default=LOG_DIR, help=log_help)
@@ -32,6 +41,10 @@ log_interval_args = dict(type=int, default=LOG_INTERVAL, help=log_interval_help)
 bbox_args = dict(type=str, help=bbox_help)
 bucket_args = dict(type=str, default=AWS_BUCKET, help=bucket_help)
 region_args = dict(type=str, default=AWS_REGION, help=region_help)
+geojson_args = dict(type=str, help=geojson_help)
+mongo_args = dict(type=str, default=DEFAULT_MONGODB_URI, help=mongo_help)
+db_args = dict(type=str, default=DEFAULT_DB, help=db_help)
+collection_args = dict(type=str, help=collection_help)
 
 # build parser
 parser = argparse.ArgumentParser(description='Log and store geographic tweets')
@@ -51,6 +64,14 @@ listen_parser.add_argument('--log-dir', **log_args)
 listen_parser.add_argument('--bucket', **bucket_args)
 listen_parser.add_argument('--region', **region_args)
 
+# add geomongo args
+geomongo_parser = subparser.add_parser('geomongo')
+geomongo_parser.set_defaults(which='geomongo')
+geomongo_parser.add_argument('file', **geojson_args)
+geomongo_parser.add_argument('collection', **collection_args)
+geomongo_parser.add_argument('--mongo', **mongo_args)
+geomongo_parser.add_argument('--db', **db_args)
+
 
 def main():
     args = parser.parse_args()
@@ -58,7 +79,9 @@ def main():
         Geotweet(args).stream()
     elif args.which == 'load':
         Geotweet(args).load()
+    elif args.which == 'geomongo'
+        GeoMongo(args).run()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

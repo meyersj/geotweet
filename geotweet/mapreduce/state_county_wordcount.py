@@ -77,7 +77,7 @@ class MRStateCountyWordCount(MRJob):
             return
         # count words
         for word in self.extractor.run(data['text']):
-            yield (word), 1
+            yield (word, ), 1
             yield (word, state), 1
             yield (word, state, county), 1
     

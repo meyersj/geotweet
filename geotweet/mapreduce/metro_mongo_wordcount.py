@@ -11,13 +11,13 @@ from mrjob.step import MRStep
 try:
     # when running on EMR a geotweet package will be loaded onto PYTHON PATH
     from geotweet.mapreduce.utils.words import WordExtractor
-    from geotweet.mongo.mongo import MongoGeo
+    from geotweet.geomongo.mongo import MongoGeo
 except ImportError:
     # runing locally
     from utils.words import WordExtractor
     parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.insert(0, parent) 
-    from mongo.mongo import MongoGeo
+    from geomongo.mongo import MongoGeo
 
 
 DB = "geotweet"
