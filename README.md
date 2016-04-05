@@ -21,12 +21,10 @@ Dependencies
 apt-get update
 apt-get install -y \
     python-pip python-dev \
-    libgeos-dev libspatialindex-dev \
-    libxml2-dev libxslt1-dev \
-    libffi-dev
+    libgeos-dev libspatialindex-dev
 ```
 
-Install `geotweet` and `geoload` command line utilities
+Install `geotweet` command line utility
 ```
 pip install geotweet
 ```
@@ -37,8 +35,9 @@ Installing this package will provide you with a python executable named `geotwee
 
 ```
 geotweet stream|load [parameters]
-geotweet stream --help
-geotweet load --help
+geotweet stream --help      # store Twitter Streaming API to log files
+geotweet load --help        # load log files to S3 bucket
+geotweet geomongo --help    # load GeoJSON files into MongoDB instance 
 ```
 
 #### stream
@@ -65,6 +64,20 @@ optional arguments:
   --log-dir LOG_DIR  Path to log file directoy
   --bucket BUCKET    AWS S3 Bucket name
   --region REGION    AWS S3 Region such as 'us-west-2'
+```
+
+#### geomongo
+```
+usage: geotweet geomongo [-h] [--mongo MONGO] [--db DB] file collection
+
+positional arguments:
+  file           Path to geojson file
+  collection     Name of collection
+
+optional arguments:
+  -h, --help     show this help message and exit
+  --mongo MONGO  MongodDB URI (default=mongodb://127.0.0.1:27017)
+  --db DB        Name of db (default=geotweet)
 ```
 
 #### Environment Variables
