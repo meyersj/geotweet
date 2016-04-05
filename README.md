@@ -244,7 +244,7 @@ python geotweet/mapreduce/state_county_wordcount.py $src -r emr --output-dir=$ds
 
 Tests available to run after cloning and installing dependencies.
 ```
-nosetests geotweet/tests/geotweet       # requires environment variables listed above to be set
+nosetests geotweet/tests/twitter        # requires environment variables listed above to be set
 nosetests geotweet/tests/mapreduce
 nosetests geotweet/tests/geomongo       # requires MongoDB instance running locally
 ```
@@ -260,9 +260,7 @@ vagrant box add ubuntu/trusty64
 vagrant up
 vagrant ssh
 
+# load geographic data into MongoDB
 cd /vagrant/bin
-data=../geotweet/data
-./geotweet geomongo --db ${db} ${data}/geo/us_metro_areas.geojson metro
-./geotweet geomongo --db ${db} ${data}/geo/us_states.geojson states
-./geotweet geomongo --db ${db} ${data}/geo/us_counties.geojson counties
+./build_db
 ```
