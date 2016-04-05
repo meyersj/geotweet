@@ -7,11 +7,17 @@ import json
 from mrjob.job import MRJob
 from mrjob.step import MRStep
 
-root = dirname(dirname(os.path.abspath(__file__)))
-sys.path.append(root)
 
-from utils.words import WordExtractor
-from mongo.mongo import MongoGeo
+try:
+    # when running on EMR a geotweet package will be loaded onto PYTHON PATH
+    from geotweet.mapreduce.utils.words import WordExtractor
+    from geotweet.mongo.mongo import MongoGeo
+except ImportError:
+    # runing locally
+    from utils.words import WordExtractor
+    parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sys.path.insert(0, parent) 
+    from mongo.mongo import MongoGeo
 
 
 DB = "geotweet"
@@ -21,10 +27,15 @@ METERS_PER_MILE = 1609
 METRO_DISTANCE = 50 * METERS_PER_MILE
 
 
-class MRMetroWords(MRJob):
+class MRMetroMongoWordCount(MRJob):
     """
     Map Reduce job that counts word occurences for each US Metro Area
 
+    Requires a running MongoDB instance with us_metro_areas.geojson loaded
+
+    # Command to load metro area. Must name the collection 'metro'
+    `geoloader geojson /path/to/us_metro_areas.geojson metro`
+    
     Mapper:
 
         1. Ignore tweets that appear to be from HR accounts about jobs and hiring
@@ -89,7 +100,8 @@ class MRMetroWords(MRJob):
             word=word,
             count=total
         ))
+        yield metro, (total, word) 
 
 
 if __name__ == '__main__':
-    MRMetroWords.run()
+    MRMetroMongoWordCount.run()

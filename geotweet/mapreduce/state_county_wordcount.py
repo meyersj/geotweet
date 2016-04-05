@@ -9,12 +9,17 @@ from mrjob.step import MRStep
 
 import Geohash
 
-#root = dirname(dirname(os.path.abspath(__file__)))
-#sys.path.append(root)
 
-from utils.reader import FileReader
-from utils.words import WordExtractor
-from utils.lookup import CachedCountyLookup
+try:
+    # when running on EMR a geotweet package will be loaded onto PYTHON PATH
+    from geotweet.mapreduce.utils.reader import FileReader
+    from geotweet.mapreduce.utils.words import WordExtractor
+    from geotweet.mapreduce.utils.lookup import CachedCountyLookup
+except ImportError:
+    # runing locally
+    from utils.reader import FileReader
+    from utils.words import WordExtractor
+    from utils.lookup import CachedCountyLookup
 
 
 """
@@ -32,7 +37,7 @@ GEOHASH_PRECISION = 7
 MIN_WORD_COUNT = 5      # ignore low occurences
 
 
-class MRGeoWordCount(MRJob):
+class MRStateCountyWordCount(MRJob):
     """
     Count word occurences for US tweets by entire county, by State and County
     
@@ -72,9 +77,9 @@ class MRGeoWordCount(MRJob):
             return
         # count words
         for word in self.extractor.run(data['text']):
-            yield word, 1
-            yield "{0}|{1}".format(word, state), 1
-            yield "{0}|{1}|{2}".format(word, state, county), 1
+            yield (word), 1
+            yield (word, state), 1
+            yield (word, state, county), 1
     
     def hr_filter(self, text):
         """ check if description of twitter using contains job related key words """
@@ -88,17 +93,14 @@ class MRGeoWordCount(MRJob):
         total = int(sum(values))
         if total < MIN_WORD_COUNT:
             return
-        # parse key of the form ('word', 'word|state', 'word|state|county')
-        parts = key.split('|')
-        state = county = ''
-        if len(parts) >= 2:
-            state = parts[1]
-        if len(parts) == 3:
-            state = parts[1]
-            county = parts[2]
-        # output results
-        yield (parts[0], state, county), total
+        word = state = county = None
+        word = key[0]
+        if len(key) >= 2:
+            state = key[1]
+        if len(key) >= 3:
+            county = key[2]
+        yield (word, state, county), total
 
 
 if __name__ == '__main__':
-    MRGeoWordCount.run()
+    MRStateCountyWordCount.run()
