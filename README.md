@@ -178,15 +178,29 @@ job to count word occurences by each County, State and the entire US.
 ```
 git clone https://github.com/meyersj/geotweet.git
 cd geotweet
-sudo pip install -r mapreduce_requirements.txt
-nosetests tests/mapreduce
+pip install -r requirements.txt
+nosetests geotweet/tests/mapreduce
 ```
 
 Run **Local** Job
 ```bash
+data=geotweet/data/mapreduce/twitter-stream.log.2016-03-27_01-53
+metro_geojson=geotweet/data/geo/us_metro_areas.geojson
+
+cd geotweet/mapreduce
 # start job
-python mapreduce/geo.py data/mapreduce/twitter-stream.log.2016-03-26_13-13
+
+# Map Reduce Word-Count broken down by US, State and County (Local Spatial-Lookup)
+python state_county_wordcount.py $data
+
+# load Metro Areas GeoJSON into Mongo DB
+geotweet geomongo $metro_geojson metro
+
+# Map Reduce Word-Count broken down by Metro Area
+# requires MongoDB to be running at 127.0.0.1:27017
+python metro_mongo_wordcount.py $data
 ```
+
 
 Run **EMR** Job
 ```bash
