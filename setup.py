@@ -6,24 +6,29 @@ except ImportError:
 
 setup(
     name='geotweet',
-    version='0.1.6',
+    version='0.2.0',
     description='Fetch geographic tweets from Twitter Streaming API',
     author='Jeffrey Alan Meyers',
     author_email='jeffrey.alan.meyers@gmail.com',
     url='https://github.com/meyersj/geotweet',
-    packages=['geotweet', 'geotweet.twitter', 'geotweet.mongo', 'geotweet.geo'],
-    scripts=['bin/geotweet', 'bin/geoloader'],
+    packages=[
+        'geotweet',
+        'geotweet.twitter',
+        'geotweet.geomongo',
+        'geotweet.mapreduce',
+        'geotweet.mapreduce.utils'
+    ],
+    scripts=['bin/geotweet'],
     include_package_data=True,
     install_requires=[
+        'setuptools',
         'argparse',
         'boto3',
-        'python-twitter',
-        'requests',
         'mrjob',
+        'python-twitter',
         'pymongo',
         'Geohash',
         'Shapely',
-        'Rtree',
-        'lxml'
+        'Rtree'
     ]
 )
