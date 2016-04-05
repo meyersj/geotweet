@@ -79,7 +79,7 @@ def main():
         Geotweet(args).stream()
     elif args.which == 'load':
         Geotweet(args).load()
-    elif args.which == 'geomongo'
+    elif args.which == 'geomongo':
         GeoMongo(args).run()
 
 
