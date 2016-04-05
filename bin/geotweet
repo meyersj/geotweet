@@ -25,7 +25,7 @@ DEFAULT_DB = 'geotweet'
 # ======================
 
 # help messages
-log_help = "Path to log file directoy"
+log_help = "Path to log file directory"
 log_interval_help = "Minutes in each log file"
 bbox_help = "Bounding Box as 'SW,NE' using 'Lon,Lat' for each point."
 bucket_help = "AWS S3 Bucket name"
