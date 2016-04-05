@@ -19,7 +19,7 @@ The log files in S3 are then used as input for Elastic MapReduce jobs.
 Dependencies
 ```
 apt-get update
-apt-get install python-pip python-dev libgeos-dev libspatialindex-dev
+apt-get install python-dev libgeos-dev libspatialindex-dev
 ```
 
 Install `geotweet` command line utility
@@ -32,20 +32,22 @@ Installing this package will provide you with a python executable named `geotwee
 ### Usage
 
 ```
-geotweet stream|load [parameters]
-geotweet stream --help      # store Twitter Streaming API to log files
-geotweet load --help        # load log files to S3 bucket
-geotweet geomongo --help    # load GeoJSON files into MongoDB instance 
+geotweet stream|load|geomongo [options]
+geotweet stream --help                    # store Twitter Streaming API to log files
+geotweet load --help                      # load log files to S3 bucket
+geotweet geomongo --help                  # load GeoJSON files into MongoDB instance 
 ```
 
 #### stream
+
+Store geograhpic tweets from Twitter Streaming API into `--log-dir`
 ```
 usage: geotweet stream [-h] [--log-dir LOG_DIR] [--log-interval LOG_INTERVAL]
                        [--bbox BBOX]
 
 optional arguments:
   -h, --help            show this help message and exit
-  --log-dir LOG_DIR     Path to log file directoy
+  --log-dir LOG_DIR     Path to log file directory
   --log-interval LOG_INTERVAL
                         Minutes in each log file
   --bbox BBOX           Bounding Box as 'SW,NE' using 'Lon,Lat' for each
@@ -53,18 +55,22 @@ optional arguments:
 ```
 
 #### load
+
+Listen for archived files in `--log-dir` and upload to S3 bucket
 ```
 usage: geotweet load [-h] [--log-dir LOG_DIR] [--bucket BUCKET]
                      [--region REGION]
 
 optional arguments:
   -h, --help         show this help message and exit
-  --log-dir LOG_DIR  Path to log file directoy
+  --log-dir LOG_DIR  Path to log file directory
   --bucket BUCKET    AWS S3 Bucket name
   --region REGION    AWS S3 Region such as 'us-west-2'
 ```
 
 #### geomongo
+
+Load GeoJSON files into MongoDB
 ```
 usage: geotweet geomongo [-h] [--mongo MONGO] [--db DB] file collection
 
@@ -177,50 +183,67 @@ job to count word occurences by each County, State and the entire US.
 git clone https://github.com/meyersj/geotweet.git
 cd geotweet
 pip install -r requirements.txt
-nosetests geotweet/tests/mapreduce
 ```
 
-Run **Local** Job
+Run **Local** Job 1
 ```bash
+# cd /path/to/geotweet
 data=$PWD/geotweet/data/mapreduce/twitter-stream.log.2016-03-27_01-53
-metro_geojson=$PWD/geotweet/data/geo/us_metro_areas.geojson
 
+# move to MapReduce jobs directory
 cd geotweet/mapreduce
 
-# start job
-# Map Reduce Word-Count broken down by US, State and County (Local Spatial-Lookup)
+# Map WordCount broken down by US, State and County (Local spatial lookup using Shapely/Rtree)
 python state_county_wordcount.py $data
+```
+Output tuples: `((Word, State, County), Total)`
 
-# load Metro Areas GeoJSON into Mongo DB
+
+Run **Local** Job 2 (Requires MongoDB instance)
+```bash
+# cd /path/to/geotweet
+metro_geojson=$PWD/geotweet/data/geo/us_metro_areas.geojson
+data=$PWD/geotweet/data/mapreduce/twitter-stream.log.2016-03-27_01-53
+
+# load Metro Areas GeoJSON into MongoDB
 geotweet geomongo $metro_geojson metro
 
-# Map Reduce Word-Count broken down by Metro Area
-# requires MongoDB to be running at 127.0.0.1:27017
+# move to MapReduce jobs directory
+cd geotweet/mapreduce
+
+# MR WordCount broken down by Metro Area (spatial lookup using Mongo)
+# assumes MongoDB is running at 127.0.0.1:27017
 python metro_mongo_wordcount.py $data
 ```
 
+Output is sent to stdout as tupes `(Metro Area, (Total, Word))`
+and stored in MongoDB `db=geotweet` as `collection=geotweet` as documents
+```
+{
+  metro_area:   "Portland, OR--WA",
+  word:         "beautiful",
+  count:        142
+}
+```
 
 Run **EMR** Job
 ```bash
+# set all of the config parameters, make sure all example paths are corrected
 cp example_conf/mrjob.conf ~/.mrjob.conf
-vim ~/.mrjob.conf       # set all of the config parameters, make sure all example paths are corrected
+vim ~/.mrjob.conf       
+
+# set input/output S3 buckets
 src=s3://some.s3.bucket/input                               # folder containing logs from `streamer.py`
 dst=s3://some.s3.bucket/output/<new folder>                 # the new folder should not already exist
 
 # start job and supress stdout output (will go to s3) 
-python mapreduce/state_county_wordcount.py $src -r emr --output-dir=$dst --no-output       
+python geotweet/mapreduce/state_county_wordcount.py $src -r emr --output-dir=$dst --no-output       
 ```
-
-Output tuples have the form `((Word, State, County), Total)`
-
 
 ### Tests
 
-Tests available to run after cloning and installing dependencies
+Tests available to run after cloning and installing dependencies.
 ```
-git clone https://github.com/meyersj/geotweet.git
-cd geotweet
-# .. install all dependencies ...
 nosetests geotweet/tests/geotweet       # requires environment variables listed above to be set
 nosetests geotweet/tests/mapreduce
 nosetests geotweet/tests/geomongo       # requires MongoDB instance running locally
