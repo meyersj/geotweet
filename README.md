@@ -184,12 +184,12 @@ nosetests geotweet/tests/mapreduce
 
 Run **Local** Job
 ```bash
-data=geotweet/data/mapreduce/twitter-stream.log.2016-03-27_01-53
-metro_geojson=geotweet/data/geo/us_metro_areas.geojson
+data=$PWD/geotweet/data/mapreduce/twitter-stream.log.2016-03-27_01-53
+metro_geojson=$PWD/geotweet/data/geo/us_metro_areas.geojson
 
 cd geotweet/mapreduce
-# start job
 
+# start job
 # Map Reduce Word-Count broken down by US, State and County (Local Spatial-Lookup)
 python state_county_wordcount.py $data
 
@@ -210,10 +210,10 @@ src=s3://some.s3.bucket/input                               # folder containing 
 dst=s3://some.s3.bucket/output/<new folder>                 # the new folder should not already exist
 
 # start job and supress stdout output (will go to s3) 
-python mapreduce/geo.py $src -r emr --output-dir=$dst --no-output       
+python mapreduce/state_county_wordcount.py $src -r emr --output-dir=$dst --no-output       
 ```
 
-Output tuples have the form `([Word, State, County], Total)`
+Output tuples have the form `((Word, State, County), Total)`
 
 
 ### Tests
@@ -223,17 +223,25 @@ Tests available to run after cloning and installing dependencies
 git clone https://github.com/meyersj/geotweet.git
 cd geotweet
 # .. install all dependencies ...
-nosetests tests/geotweet        # requires environment variables listed above to be set
-nosetests tests/mapreduce
+nosetests geotweet/tests/geotweet       # requires environment variables listed above to be set
+nosetests geotweet/tests/mapreduce
+nosetests geotweet/tests/geomongo       # requires MongoDB instance running locally
 ```
 
 ### Virtual Machine
 
-To build a local virtual machine you need `virtualbox`/`vagrant` installed and a `ubuntu/trusty64` box
+To build a local virtual machine with MongoDB you need `virtualbox`/`vagrant`
+installed and a `ubuntu/trusty64` box
 ```
 git clone https://github.com/meyersj/geotweet.git
 cd geotweet
 vagrant box add ubuntu/trusty64
 vagrant up
 vagrant ssh
+
+cd /vagrant/bin
+data=../geotweet/data
+./geotweet geomongo --db ${db} ${data}/geo/us_metro_areas.geojson metro
+./geotweet geomongo --db ${db} ${data}/geo/us_states.geojson states
+./geotweet geomongo --db ${db} ${data}/geo/us_counties.geojson counties
 ```
