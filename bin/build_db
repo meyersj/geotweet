@@ -1,0 +1,22 @@
+#!/bin/bash
+
+
+function drop_db {
+    mongo ${1} --eval "db.dropDatabase();"
+}
+
+
+db=geotweet
+data=../geotweet/data
+
+
+# clear geotweet database
+drop_db ${db}
+
+# download OSM extract and load POI nodes into db
+./geoloader osm --db ${db} osm 
+
+# load GeoJSON files into db
+./geoloader geojson --db ${db} ${data}/geo/us_metro_areas.geojson metro
+./geoloader geojson --db ${db} ${data}/geo/us_states.geojson states
+./geoloader geojson --db ${db} ${data}/geo/us_counties.geojson counties
