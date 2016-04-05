@@ -28,7 +28,7 @@ sudo apt-get install -y \
 
 Install `geotweet` and `geoload` command line utilities
 ```
-pip install geotweet
+sudo pip install geotweet
 ```
 
 Installing this package will provide you with a python executable named `geotweet`.
