@@ -5,21 +5,20 @@ set -e
 function dependencies {
     apt-get update
     apt-get install -y \
-        python-pip python-dev python-pyasn1 \
+        python-pip python-dev \
         libgeos-dev libspatialindex-dev \
-        libssl-dev \
         libxml2-dev libxslt1-dev \
-        libffi-dev \
-        default-jre
+        libffi-dev
 }
 
 
 function python_env {
-    pip install -r /vagrant/all_requirements.txt    
+    pip install -r /vagrant/requirements.txt
 }
 
 
 function osmosis {
+    apt-get install default-jre
     cd /opt
     mkdir -p /opt/osmosis
     cd /opt/osmosis
