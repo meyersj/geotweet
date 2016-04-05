@@ -1,3 +1,4 @@
+import os
 import json
 from logging.handlers import TimedRotatingFileHandler
 
@@ -6,6 +7,10 @@ logger = logging.getLogger(__name__)
 
 
 def get_rotating_logger(logfile, interval, when="M"):
+    # create log directory if it doesn't exist
+    log_dir = os.path.dirname(logfile)
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
     rot_logger = logging.getLogger('twitter-stream')
     rot_logger.setLevel(logging.INFO)
     handler = TimedRotatingFileHandler(logfile, when=when, interval=interval)
