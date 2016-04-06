@@ -3,6 +3,7 @@ import os
 from os.path import dirname
 import re
 import json
+import logging
 
 from mrjob.job import MRJob
 from mrjob.step import MRStep
@@ -11,15 +12,17 @@ import Geohash
 
 
 try:
-    # when running on EMR a geotweet package will be loaded onto PYTHON PATH
-    from geotweet.mapreduce.utils.reader import FileReader
+    # when running on EMR a geotweet package will installed with pip
     from geotweet.mapreduce.utils.words import WordExtractor
     from geotweet.mapreduce.utils.lookup import CachedCountyLookup
 except ImportError:
-    # runing locally
-    from utils.reader import FileReader
+    # when running locally utils using relative import
     from utils.words import WordExtractor
     from utils.lookup import CachedCountyLookup
+
+
+# must log to stderr when running on EMR or job will fail
+logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
 
 """
@@ -33,8 +36,8 @@ precision   width   height
 7           152.9m  152.4m
 8           38.2m   19m
 """
-GEOHASH_PRECISION = 7
-MIN_WORD_COUNT = 5      # ignore low occurences
+GEOHASH_PRECISION = 7 
+MIN_WORD_COUNT = 5              # ignore low occurences
 
 
 class MRStateCountyWordCount(MRJob):
@@ -88,7 +91,7 @@ class MRStateCountyWordCount(MRJob):
   
     def combiner(self, key, values):
         yield key, sum(values)
-    
+
     def reducer(self, key, values):
         total = int(sum(values))
         if total < MIN_WORD_COUNT:
