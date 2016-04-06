@@ -80,7 +80,7 @@ class ExtractStep(ProcessStep):
             location=user['location'],
             friends_count=user['friends_count'],
             followers_count=user['followers_count'],
-            text=tweet['text']
+            text=tweet['text'],
             tweet_id=tweet['id_str'],
             source=tweet['source'],
             created_at=tweet['created_at'],

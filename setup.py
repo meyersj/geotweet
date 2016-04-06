@@ -6,7 +6,7 @@ except ImportError:
 
 setup(
     name='geotweet',
-    version='0.1.16',
+    version='0.1.17',
     description='Fetch geographic tweets from Twitter Streaming API',
     author='Jeffrey Alan Meyers',
     author_email='jeffrey.alan.meyers@gmail.com',
