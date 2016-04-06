@@ -1,12 +1,14 @@
+from setuptools import setup
 try:
     from setuptools import setup
+    print "setuptools"
 except ImportError:
     from distutils.core import setup
-
+    print "distutils"
 
 setup(
     name='geotweet',
-    version='0.1.12',
+    version='0.1.14',
     description='Fetch geographic tweets from Twitter Streaming API',
     author='Jeffrey Alan Meyers',
     author_email='jeffrey.alan.meyers@gmail.com',
