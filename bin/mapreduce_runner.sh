@@ -8,7 +8,8 @@ DATADIR=`readlink -f ${SCRIPTDIR}/../geotweet/data/mapreduce`
 # === MR Job Parameters ===
 
 interpreter=../env/bin/python
-script="${JOBDIR}/state_county_wordcount.py"
+#script="${JOBDIR}/state_county_wordcount.py"
+script="${JOBDIR}/metro_mongo_wordcount.py"
 
 # ==========================
 
@@ -28,5 +29,5 @@ EMR_JOB_CMD="${interpreter} ${script} -r emr ${src} ${dst} --no-output"
 EMR_JOB_CMD="${interpreter} ${script} -r emr ${conf} ${src} ${dst} --no-output"
 
 # Run
-#${LOCAL_JOB_CMD}
-${EMR_JOB_CMD}
+${LOCAL_JOB_CMD}
+#${EMR_JOB_CMD}
