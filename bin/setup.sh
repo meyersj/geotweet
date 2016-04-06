@@ -4,9 +4,8 @@ set -e
 
 function dependencies {
     apt-get update
-    apt-get install -y \
-        python-pip python-dev \
-        libgeos-dev libspatialindex-dev
+    apt-get install -y python-dev libgeos-dev libspatialindex-dev
+    curl https://bootstrap.pypa.io/get-pip.py | python
 }
 
 
