@@ -13,7 +13,7 @@ try:
     from geotweet.mapreduce.utils.words import WordExtractor
     from geotweet.geomongo.mongo import MongoGeo
 except ImportError:
-    # runing locally
+    # running locally
     from utils.words import WordExtractor
     parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.insert(0, parent) 
