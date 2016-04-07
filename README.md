@@ -20,10 +20,9 @@ Dependencies
 ```
 apt-get update
 apt-get install -y \
-    python-pip python-dev \
-    libgeos-dev libspatialindex-dev \
-    libxml2-dev libxslt1-dev \
-    libffi-dev
+        python-dev libgeos-dev libspatialindex-dev \
+        build-essential protobuf-compiler libprotobuf-dev \
+curl https://bootstrap.pypa.io/get-pip.py | python
 ```
 
 Install `geotweet` and `geoload` command line utilities
