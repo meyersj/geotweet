@@ -19,7 +19,12 @@ The log files in S3 are then used as input for Elastic MapReduce jobs.
 Dependencies
 ```
 apt-get update
-apt-get install python-dev libgeos-dev libspatialindex-dev
+apt-get install python-dev \
+    libgeos-dev libspatialindex- \
+    build-essential protobuf-compiler libprotobuf-dev
+
+# if you don't already have pip
+curl https://bootstrap.pypa.io/get-pip.py | python
 ```
 
 Install `geotweet` command line utility
