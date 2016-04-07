@@ -53,9 +53,10 @@ class OSMRunner(object):
         """ Dowload file to /tmp """
         tmp = self.url2tmp(output_dir, url)
         if os.path.isfile(tmp) and not overwrite:
-            logging.info("File {0} already exists. Skipping.".format(tmp))
+            logger.info("File {0} already exists. Skipping download.".format(tmp))
             return tmp
         f = open(tmp, 'wb')
+        logger.info("Downloading {0}".format(url))
         res = requests.get(url, stream=True)
         if res.status_code != 200:
             # failed to download, cleanup and raise exception
@@ -70,6 +71,7 @@ class OSMRunner(object):
 
     def extract(self, pbf, output):
         """ extract POI nodes from osm pbf extract """
+        logger.info("Extracting POI nodes from {0} to {1}".format(pbf, output))
         with open(output, 'w') as f:
             # define callback for each node that is processed
             def nodes_callback(nodes):
