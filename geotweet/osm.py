@@ -6,7 +6,6 @@ from os.path import dirname
 import requests
 from imposm.parser import OSMParser
 
-
 from .twitter.load import S3Loader
 
 import logging
@@ -36,8 +35,6 @@ class OSMRunner(object):
         except EnvironmentError as e:
             logger.error(e)
             sys.exit(1)
-      
-
 
     def run(self):
         """ For each state in states file build url and download file """
