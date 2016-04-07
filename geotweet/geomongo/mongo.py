@@ -18,12 +18,12 @@ DEFAULT_TIMEOUT = 5 * 1000
 class Mongo(object):
     """ Base wrapper class to connect to mongo and intialize a collection """
     
-    def __init__(self, db=DB, uri=MONGODB_URI, collection=COLLECTION):
-        timeout = DEFAULT_TIMEOUT
+    def __init__(self, db=DB, uri=MONGODB_URI, collection=COLLECTION,
+            timeout=DEFAULT_TIMEOUT):
         args = dict(
-            connectTimeoutMS=timeout,
-            socketTimeoutMS=timeout,
-            serverSelectionTimeoutMS=timeout
+                connectTimeoutMS=timeout,
+                socketTimeoutMS=timeout,
+                serverSelectionTimeoutMS=timeout
         )
         self.client = MongoClient(uri, **args)
         self.db = self.client[db]
@@ -32,6 +32,16 @@ class Mongo(object):
     def insert(self, data):
         try:
             self.collection.insert_one(data)
+        except pymongo.errors.DuplicateKeyError as e:
+            logger.warn(str(e))
+            logger.warn("Record already exists in database. Skipping")
+        except pymongo.errors.WriteError as e:
+            logger.warn(str(e))
+            logger.warn("Write Error")
+
+    def insert_many(self, data):
+        try:
+            self.collection.insert_many(data)
         except pymongo.errors.DuplicateKeyError as e:
             logger.warn(str(e))
             logger.warn("Record already exists in database. Skipping")
@@ -61,12 +71,12 @@ class MongoGeo(Mongo):
 
     def near(self, coordinates, distance=None):
         query = dict(geometry={
-            "$geoNear":{
+            "$near":{
                 "$geometry":self.point(coordinates),
             }
         })
         if distance:
-            query['geometry']['$geoNear']['$maxDistance'] = distance
+            query['geometry']['$near']['$maxDistance'] = distance
         return query
 
     def intersects(self, coordinates):
