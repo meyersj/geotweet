@@ -19,19 +19,26 @@ RTREE_LOCATION = '/tmp/geotweet-rtree-{0}'
 AWS_BUCKET = "https://s3-us-west-2.amazonaws.com/jeffrey.alan.meyers.bucket"
 COUNTIES_GEOJSON = os.path.join(AWS_BUCKET, "geotweet/us_counties102005.geojson")
 METRO_GEOJSON = os.path.join(AWS_BUCKET, "geotweet/us_metro_areas102005.geojson")
-# use local files if these environment variables are set with a filepath
+# use local files instead if these environment variables are set with a filepath
 if 'COUNTIES_GEOJSON_LOCAL' in os.environ:
     COUNTIES_GEOJSON = os.environ['COUNTIES_GEOJSON_LOCAL']
 if 'METRO_GEOJSON_LOCAL' in os.environ:
     METRO_GEOJSON = os.environ['METRO_GEOJSON_LOCAL']
 
- 
+
+# Convert between geographic and projected coordinate systems
+# Geographic: EPSG Projection 4326 - WGS 84
+proj4326= Proj(init='epsg:4326')
+# Projected: ESRI Projection 102005 - USA Contiguous Equidistant Conic
+ESRI102500 = '+proj=eqdc +lat_0=39 +lon_0=-96 ' + \
+    '+lat_1=33 +lat_2=45 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs'
+proj102500 = Proj(ESRI102500)
+
 def project(lonlat):
-    ESRI102500 = '+proj=eqdc +lat_0=39 +lon_0=-96 ' + \
-        '+lat_1=33 +lat_2=45 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs'
-    proj4326= Proj(init='epsg:4326')
-    proj102500 = Proj(ESRI102500)
     return transform(proj4326, proj102500, *lonlat)
+
+def rproject(lonlat):
+    return transform(proj102500, proj4326, *lonlat)
 
 
 class SpatialLookup(FileReader):
@@ -49,11 +56,14 @@ class SpatialLookup(FileReader):
             location = self.get_location(src)
             if not self._exists(location):
                 # index does not create so fetch data and build it
-                self._build(src, location)
+                self.idx = self._build_from_geojson(src, location)
             else:
-                # index already exists
+                # index on filesystem already exists
                 self.idx = index.Rtree(location)
-    
+        else:
+            # create empty index in memory
+            self.idx = self._initialize()
+
     def get_location(self, src):
         digest = self.digest(src)
         if not digest:
@@ -77,7 +87,7 @@ class SpatialLookup(FileReader):
             return True
         return False
 
-    def get_object(self, point, buffer_size=0):
+    def get_object(self, point, buffer_size=0, multiple=False):
         """ lookup object based on point as [longitude, latitude] """
         # first search bounding boxes
         # idx.intersection method modifies input if it is a list
@@ -93,26 +103,36 @@ class SpatialLookup(FileReader):
         if buffer_size:
             geo = geo.buffer(buffer_size)
         nearest = None
+        results = []
         for bbox_match in self.idx.intersection(geo.bounds, objects=True):
             # check actual geometry
             record = bbox_match.object
             try:
-                if record['geometry'].intersects(geo):
+                if not record['geometry'].intersects(geo):
+                    # skip processing current matching bbox
+                    continue
+                if multiple:
+                    # return all intersecting records
+                    results.append(record['properties'])
+                else:
+                    # return only nearest record
                     dist = Point(tmp).distance(record['geometry'])
                     if not nearest or dist < nearest['dist']:
                         nearest = dict(data=record, dist=dist)
             except shapely.geos.TopologicalError as e:
                 logging.error(e)
                 logging.error(record['properties'])
-        if not nearest:
-            return None
-        return nearest['data']['properties']
-    
+        if multiple:
+            return results
+        if nearest:
+            return nearest['data']['properties']
+        return None
+
     def _build_obj(self, feature):
         feature['geometry'] = shape(feature['geometry'])
         return feature
 
-    def _build(self, src, location):
+    def _build_from_geojson(self, src, location):
         """ Build a RTree index to disk using bounding box of each feature """
         geojson = json.loads(self.read(src))
         def generate():
@@ -121,9 +141,17 @@ class SpatialLookup(FileReader):
                 yield i, feature['geometry'].bounds, feature
         if geojson:
             # create index, flush to disk which disables access then re-enable access
-            self.idx = index.Rtree(location, generate())
-            self.idx.close()
-            self.idx = index.Rtree(location)
+            idx = index.Rtree(location, generate())
+            idx.close()
+            return index.Rtree(location)
+
+    def _initialize(self):
+        """ Build a RTree in memory for features to be added to """
+        return index.Rtree()
+
+    def insert(self, key, feature):
+        feature = self._build_obj(feature)
+        self.idx.insert(key, feature['geometry'].bounds, obj=feature)
 
 
 class MetroLookup(SpatialLookup):
