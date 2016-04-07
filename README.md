@@ -17,7 +17,7 @@ The log files in S3 are then used as input for Elastic MapReduce jobs.
 ### Install
 
 Dependencies
-```
+```bash
 apt-get update
 apt-get install python-dev \
     libgeos-dev libspatialindex- \
@@ -28,7 +28,7 @@ curl https://bootstrap.pypa.io/get-pip.py | python
 ```
 
 Install `geotweet` command line utility
-```
+```bash
 pip install geotweet
 ```
 
@@ -36,11 +36,13 @@ Installing this package will provide you with a python executable named `geotwee
 
 ### Usage
 
-```
-geotweet stream|load|geomongo [options]
-geotweet stream --help                    # store Twitter Streaming API to log files
-geotweet load --help                      # load log files to S3 bucket
-geotweet geomongo --help                  # load GeoJSON files into MongoDB instance 
+```bash
+geotweet stream|load|geomongo|osm [options]
+geotweet stream --help                  # store Twitter Streaming API to log files
+geotweet load --help                    # load log files to S3 bucket
+geotweet geomongo --help                # load GeoJSON files into MongoDB instance
+geotweet osm --help                     # download osm extracts from geofabrik
+                                        # extract POI nodes and load into S3 bucket
 ```
 
 #### stream
@@ -87,6 +89,21 @@ optional arguments:
   -h, --help     show this help message and exit
   --mongo MONGO  MongodDB URI (default=mongodb://127.0.0.1:27017)
   --db DB        Name of db (default=geotweet)
+```
+
+#### osm
+
+Download OSM extracts from GeoFabrik, extract POI nodes and load to S3 Bucket
+```
+usage: geotweet osm [-h] [--output OUTPUT] [--states STATES] [--bucket BUCKET]
+                    [--region REGION]
+
+optional arguments:
+  -h, --help       show this help message and exit
+  --output OUTPUT  Location of output files (default=/tmp)
+  --states STATES  File containing list of states to download and load
+  --bucket BUCKET  AWS S3 Bucket name
+  --region REGION  AWS S3 Region such as 'us-west-2'
 ```
 
 #### Environment Variables
@@ -198,38 +215,31 @@ data=$PWD/geotweet/data/mapreduce/twitter-stream.log.2016-03-27_01-53
 # move to MapReduce jobs directory
 cd geotweet/mapreduce
 
+# Job 1
+# --------------------------------
 # Map WordCount broken down by US, State and County (Local spatial lookup using Shapely/Rtree)
 python state_county_wordcount.py $data
-```
-Output tuples: `((Word, State, County), Total)`
 
+# Output tuples: `((Word, State ID, County ID), Total)`
+# (("yesterday", "20", "197"), 30)
 
-Run **Local** Job 2 (Requires MongoDB instance)
-```bash
-# cd /path/to/geotweet
-metro_geojson=$PWD/geotweet/data/geo/us_metro_areas.geojson
-data=$PWD/geotweet/data/mapreduce/twitter-stream.log.2016-03-27_01-53
-
-# load Metro Areas GeoJSON into MongoDB
-geotweet geomongo $metro_geojson metro
-
-# move to MapReduce jobs directory
-cd geotweet/mapreduce
-
-# MR WordCount broken down by Metro Area (spatial lookup using Mongo)
-# assumes MongoDB is running at 127.0.0.1:27017
+ 
+# Job 2 Requires MongoDB instance)
+# ---------------------------------
+# MR WordCount broken down by Metro Area
+# build local spatial index, persist results to Mongo
+# if MongoDB is running at 127.0.0.1:27017
+export GEOTWEET_MONGODB_URI="mongodb://127.0.0.1:27017"
 python metro_mongo_wordcount.py $data
+
+# Output stored in MongoDB `db=geotweet` as `collection=geotweet` as documents
+# {
+#   metro_area:   "Portland, OR--WA",
+#   word:         "beautiful",
+#   count:        142
+# }
 ```
 
-Output is sent to stdout as tupes `(Metro Area, (Total, Word))`
-and stored in MongoDB `db=geotweet` as `collection=geotweet` as documents
-```
-{
-  metro_area:   "Portland, OR--WA",
-  word:         "beautiful",
-  count:        142
-}
-```
 
 Run **EMR** Job
 ```bash
@@ -264,8 +274,8 @@ cd geotweet
 vagrant box add ubuntu/trusty64
 vagrant up
 vagrant ssh
+cd /vagrant   # contains repository
 
-# load geographic data into MongoDB
-cd /vagrant/bin
-./build_db
+# all packages are already installed
+# geotweet executable is on your path
 ```
