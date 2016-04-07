@@ -29,7 +29,7 @@ logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
 
 DB = "geotweet"
-COLLECTION = "geotweet"
+COLLECTION = "metro_word"
 MIN_WORD_COUNT = 2
 METERS_PER_MILE = 1609
 METRO_DISTANCE = 50 * METERS_PER_MILE
@@ -41,14 +41,16 @@ class MRMetroMongoWordCount(MRJob):
     Map Reduce job that counts word occurences for each US Metro Area
 
     Requires a running MongoDB instance with us_metro_areas.geojson loaded
-
-    # Command to load metro area. Must name the collection 'metro'
-    `geoloader geojson /path/to/us_metro_areas.geojson metro`
     
+    Mapper Init:
+
+        1. Build local Rtree spatial index of US metro areas
+            - geojson file downloaded from S3 bucket
+
     Mapper:
 
         1. Ignore tweets that appear to be from HR accounts about jobs and hiring
-        2. Run MongoDB query to lookup nearest metro area based on coordinates
+        2. Lookup nearest metro area from spatial index using coordinates
         3. Tokenize tweet in individual words
         4. For each word output the tuple: (('metro area', 'word'), 1)
 
@@ -57,6 +59,11 @@ class MRMetroMongoWordCount(MRJob):
         1. Sum count for each ('metro area', 'word') key
         2. Insert record into MongoDB with word count for that metro area
     
+    Reducer Mongo:
+
+        1. Build list of all documents for each metro area and insert as batch
+        into MongoDB
+
     """
 
     def steps(self):
