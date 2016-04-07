@@ -8,6 +8,7 @@ sys.path.append(root)
 
 from geotweet.twitter import Geotweet
 from geotweet.geomongo import GeoMongo
+from geotweet.osm import OSMRunner
 
 
 # get any parameters set as environment variables
@@ -18,6 +19,8 @@ AWS_REGION = os.getenv("AWS_DEFAULT_REGION", None)
 DEFAULT_MONGODB_URI = 'mongodb://127.0.0.1:27017'
 MONGODB_URI = os.getenv('GEOTWEET_MONGODB_URI', DEFAULT_MONGODB_URI)
 DEFAULT_DB = 'geotweet'
+DEFAULT_OUT_DIR = '/tmp'
+DEFAULT_STATES = None
 
 
 # ======================
@@ -34,6 +37,8 @@ mongo_help = "MongodDB URI (default={0})".format(DEFAULT_MONGODB_URI)
 db_help = "Name of db (default={0})".format(DEFAULT_DB)
 collection_help = "Name of collection"
 geojson_help = "Path to geojson file"
+output_help = "Location of output files (default={0})".format(DEFAULT_OUT_DIR)
+states_help = "File containing list of states to download and load"
 
 # construct keywords argumets for each cli arg
 log_args = dict(type=str, default=LOG_DIR, help=log_help)
@@ -45,6 +50,8 @@ geojson_args = dict(type=str, help=geojson_help)
 mongo_args = dict(type=str, default=DEFAULT_MONGODB_URI, help=mongo_help)
 db_args = dict(type=str, default=DEFAULT_DB, help=db_help)
 collection_args = dict(type=str, help=collection_help)
+output_args = dict(type=str, default=DEFAULT_OUT_DIR, help=output_help)
+states_args = dict(type=str, default=DEFAULT_STATES, help=states_help)
 
 # build parser
 parser = argparse.ArgumentParser(description='Log and store geographic tweets')
@@ -72,6 +79,14 @@ geomongo_parser.add_argument('collection', **collection_args)
 geomongo_parser.add_argument('--mongo', **mongo_args)
 geomongo_parser.add_argument('--db', **db_args)
 
+# add stream args
+osm_parser = subparser.add_parser('osm')
+osm_parser.set_defaults(which='osm')
+osm_parser.add_argument('--output', **output_args)
+osm_parser.add_argument('--states', **states_args)
+osm_parser.add_argument('--bucket', **bucket_args)
+osm_parser.add_argument('--region', **region_args)
+
 
 def main():
     args = parser.parse_args()
@@ -81,6 +96,8 @@ def main():
         Geotweet(args).load()
     elif args.which == 'geomongo':
         GeoMongo(args).run()
+    elif args.which == 'osm':
+        OSMRunner(args).run()
 
 
 if __name__ == '__main__':
