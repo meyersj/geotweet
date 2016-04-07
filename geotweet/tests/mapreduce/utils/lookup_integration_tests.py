@@ -8,14 +8,14 @@ from rtree import index
 root = dirname(dirname(dirname(dirname(os.path.abspath(__file__)))))
 sys.path.append(root)
 
-from geotweet.mapreduce.utils.lookup import SpatialLookup
+from geotweet.mapreduce.utils.lookup import project, SpatialLookup
 
 
 GEOTWEET_DIR = root
-TEST_GEOJSON_LOCAL = os.path.join(GEOTWEET_DIR, 'data/geo/us_states.geojson') 
+TEST_GEOJSON_LOCAL = os.path.join(GEOTWEET_DIR, 'data/geo/us_states102005.geojson')
 MAX_COUNT = 100
 RESULTS_COUNT = 51
-PORTLAND = (-122.5, 45.5)
+PORTLAND = project((-122.5, 45.5))
 
 
 def exists(location):
@@ -136,13 +136,6 @@ class GetObjectTests(unittest.TestCase):
         assert exists(self.location)
         feature = self.lookup.get_object(coord)
         error = "Expected None coordinates to return None"
-        self.assertIsNone(feature, error.format(coord))
-
-    def test_invalid_lonlat(self):
-        coord = [200, -100]
-        assert exists(self.location)
-        feature = self.lookup.get_object(coord)
-        error = "Expected invalid coordinates < {0} > to return None"
         self.assertIsNone(feature, error.format(coord))
 
     def test_invalid_list(self):
