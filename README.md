@@ -212,37 +212,72 @@ cd geotweet
 pip install -r requirements.txt
 ```
 
-Run **Local** Job 1
+Run MapReduce jobs
 ```bash
 # cd /path/to/geotweet
 data=$PWD/geotweet/data/mapreduce/twitter-stream.log.2016-03-27_01-53
+osm=$PWD/geotweet/data/mapreduce/oregon-latest.poi
 
 # move to MapReduce jobs directory
 cd geotweet/mapreduce
+```
 
-# Job 1
-# --------------------------------
-# Map WordCount broken down by US, State and County (Local spatial lookup using Shapely/Rtree)
+##### Job 1
+Map Reduce Word Count broken down by US, State and County (Local spatial lookup using Shapely/Rtree)
+```
 python state_county_wordcount.py $data
 
 # Output tuples: `((Word, State ID, County ID), Total)`
 # (("yesterday", "20", "197"), 30)
-
+```
  
-# Job 2 Requires MongoDB instance)
-# ---------------------------------
-# MR WordCount broken down by Metro Area
-# build local spatial index, persist results to Mongo
-# if MongoDB is running at 127.0.0.1:27017
+###### Job 2
+Requires MongoDB instance
+
+In each Map Task, build a local spatial index of metro areas.
+For each tweet do a spatial lookup and emit words.
+Ouput is word count in tweets grouped by metro areas.
+Persist final output to Mongo.
+```bash
 export GEOTWEET_MONGODB_URI="mongodb://127.0.0.1:27017"
 python metro_mongo_wordcount.py $data
+```
 
-# Output stored in MongoDB `db=geotweet` as `collection=geotweet` as documents
-# {
-#   metro_area:   "Portland, OR--WA",
-#   word:         "beautiful",
-#   count:        142
-# }
+Output stored in MongoDB `db=geotweet` as `collection=metro_word` as documents
+```
+{
+    metro_area:   "Portland, OR--WA",
+    word:         "beautiful",
+    count:        142
+}
+```
+
+###### Job 3
+Requires MongoDB instance
+
+In each Map Task, build a local spatial index of metro areas.
+Input is log of tweets and extracted OSM POI nodes.
+For each input record look up metro area and emit data using metro as key
+and tag is tweet or POI.
+
+In reduce for each metro area, build index of POI nodes, then do
+spatial search for nearby POIs for each tweet. Emit values
+of osm tags for nearby POIs.
+
+Persis results to MongoDB
+
+```bash
+export GEOTWEET_MONGODB_URI="mongodb://127.0.0.1:27017"
+python metro_nearby_osm_tag_count.py $data
+```
+
+Output stored in MongoDB `db=geotweet` as `collection=metro_osm` as documents
+```
+{
+    metro_area:   "Portland, OR--WA",
+    word:         "bar",
+    count:        124
+}
 ```
 
 
