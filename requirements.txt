@@ -7,3 +7,4 @@ pymongo==3.2.2
 Geohash==1.0
 Shapely==1.5.14
 Rtree==0.8.2
+imposm.parser==1.0.7
