@@ -115,7 +115,7 @@ See `example_conf/stream-envvars.sh` for all options.
 + `TWITTER_ACCESS_TOKEN_KEY`
 + `TWITTER_ACCESS_TOKEN_SECRET`
 
-For `geotweet load` the following environment variables must be set.
+For `geotweet load|osm` the following environment variables must be set.
 See `example_conf/load-envvars.sh` for all options.
 + `AWS_ACCESS_KEY_ID`
 + `AWS_SECRET_ACCESS_KEY`
