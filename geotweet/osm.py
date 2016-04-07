@@ -30,8 +30,15 @@ class OSMRunner(object):
             self.states = DEFAULT_STATES
         self.output = args.output
         self.overwrite = False
-        self.loader = S3Loader(bucket=args.bucket, region=args.region)
-       
+        self.s3 = S3Loader(bucket=args.bucket, region=args.region)
+        try:
+            self.s3.valid()
+        except EnvironmentError as e:
+            logger.error(e)
+            sys.exit(1)
+      
+
+
     def run(self):
         """ For each state in states file build url and download file """
         states = open(self.states, 'r').read().splitlines()
@@ -40,7 +47,7 @@ class OSMRunner(object):
             log = "Downloading State < {0} > from < {1} >"
             logging.info(log.format(state, url))
             tmp = self.download(self.output, url, self.overwrite)
-            self.loader.store(self.extract(tmp, self.tmp2poi(tmp)))
+            self.s3.store(self.extract(tmp, self.tmp2poi(tmp)))
     
     def download(self, output_dir, url, overwrite):
         """ Dowload file to /tmp """
