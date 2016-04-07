@@ -4,7 +4,7 @@ from os.path import dirname
 import sys
 from urllib2 import HTTPError
 
-root = dirname(dirname(dirname(os.path.abspath(__file__))))
+root = dirname(dirname(dirname(dirname(os.path.abspath(__file__)))))
 sys.path.append(root)
 
 from geotweet.mapreduce.utils.reader import FileReader

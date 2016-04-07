@@ -5,7 +5,7 @@ import sys
 
 from rtree import index
 
-root = dirname(dirname(dirname(os.path.abspath(__file__))))
+root = dirname(dirname(dirname(dirname(os.path.abspath(__file__)))))
 sys.path.append(root)
 
 from geotweet.mapreduce.utils.lookup import SpatialLookup

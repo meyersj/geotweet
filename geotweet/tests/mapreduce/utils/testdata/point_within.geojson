@@ -1,0 +1,11 @@
+{
+  "type": "Feature",
+  "properties": {"id":"within"},
+  "geometry": {
+    "type": "Point",
+    "coordinates": [
+      -122.61016845703124,
+      45.52559248776561
+    ]
+  }
+}

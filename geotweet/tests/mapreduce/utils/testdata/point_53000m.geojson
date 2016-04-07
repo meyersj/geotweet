@@ -1,0 +1,11 @@
+{
+  "type": "Feature",
+  "properties": {"id":"53000m"},
+  "geometry": {
+    "type": "Point",
+    "coordinates": [
+      -122.61291503906249,
+      46.1665167159516
+    ]
+  }
+}
