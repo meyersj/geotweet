@@ -12,7 +12,7 @@ PORTLAND = [-122.675983, 45.524764]
 PROVIDENCE = [-71.404823, 41.827730]
 JOHN_HAY = "John Hay Library"
 
-TIMEOUT = 2 * 1000
+TIMEOUT = 5 * 1000
 
 def check_connection():
     timeout = TIMEOUT
