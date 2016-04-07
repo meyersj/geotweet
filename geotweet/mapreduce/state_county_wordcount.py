@@ -14,11 +14,11 @@ import Geohash
 try:
     # when running on EMR a geotweet package will installed with pip
     from geotweet.mapreduce.utils.words import WordExtractor
-    from geotweet.mapreduce.utils.lookup import CachedCountyLookup
+    from geotweet.mapreduce.utils.lookup import project, CachedCountyLookup
 except ImportError:
     # when running locally utils using relative import
     from utils.words import WordExtractor
-    from utils.lookup import CachedCountyLookup
+    from utils.lookup import project, CachedCountyLookup
 
 
 # must log to stderr when running on EMR or job will fail
@@ -70,9 +70,8 @@ class MRStateCountyWordCount(MRJob):
         # ignore HR geo-tweets for job postings
         if data['description'] and self.hr_filter(data['description']):
             return
-        # convert coordinates to geohash
-        lat = data['lonlat'][1]
-        lon = data['lonlat'][0]
+        # project coordinates to ESRI:102005 and encode as geohash
+        lon, lat = project(data['lonlat'])
         geohash = Geohash.encode(lat, lon, precision=GEOHASH_PRECISION)
         # spatial lookup for state and county
         state, county = self.counties.get(geohash) 
