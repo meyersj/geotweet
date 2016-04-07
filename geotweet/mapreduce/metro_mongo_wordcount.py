@@ -3,6 +3,7 @@ import os
 from os.path import dirname
 import re
 import json
+import logging
 
 from mrjob.job import MRJob
 from mrjob.step import MRStep
@@ -11,13 +12,20 @@ from mrjob.step import MRStep
 try:
     # when running on EMR a geotweet package will be loaded onto PYTHON PATH
     from geotweet.mapreduce.utils.words import WordExtractor
+    from geotweet.mapreduce.utils.lookup import project, MetroLookup
     from geotweet.geomongo.mongo import MongoGeo
+
 except ImportError:
     # running locally
     from utils.words import WordExtractor
+    from utils.lookup import project, MetroLookup
     parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.insert(0, parent) 
     from geomongo.mongo import MongoGeo
+
+
+# must log to stderr when running on EMR or job will fail
+logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
 
 DB = "geotweet"
@@ -25,6 +33,7 @@ COLLECTION = "geotweet"
 MIN_WORD_COUNT = 2
 METERS_PER_MILE = 1609
 METRO_DISTANCE = 50 * METERS_PER_MILE
+MONGO_TIMEOUT = 20 * 1000
 
 
 class MRMetroMongoWordCount(MRJob):
@@ -56,13 +65,17 @@ class MRMetroMongoWordCount(MRJob):
                 mapper_init=self.mapper_init,
                 mapper=self.mapper,
                 combiner=self.combiner,
-                reducer_init=self.reducer_init,
                 reducer=self.reducer
+            ),
+            MRStep(
+                reducer_init=self.reducer_init_mongo,
+                reducer=self.reducer_mongo
             )
         ]
     
     def mapper_init(self):
-        self.mongo = MongoGeo(db='geotweet', collection='metro')
+        """ build local spatial index of US metro areas """
+        self.lookup = MetroLookup()
         self.extractor = WordExtractor()
    
     def mapper(self, _, line):
@@ -72,35 +85,38 @@ class MRMetroMongoWordCount(MRJob):
         if data['description'] and re.findall(expr, data['description']):
             return
         # lookup nearest metro area
-        lat = data['lonlat'][1]
-        lon = data['lonlat'][0]
-        near = self.mongo.near([lon, lat], distance=METRO_DISTANCE)
-        try:
-            nearest = self.mongo.find(query=near, limit=1).next()
-            metro = nearest['properties']['NAME10']
-        except StopIteration:
+        lonlat = project(data['lonlat'])
+        nearest = self.lookup.get_object(lonlat, buffer_size=METRO_DISTANCE)
+        if not nearest:
             return
+        metro = nearest['NAME10']
         # count each word
         for word in self.extractor.run(data['text']):
             yield (metro, word), 1
             
     def combiner(self, key, value):
         yield key, sum(value)
-    
-    def reducer_init(self):
-        self.mongo = MongoGeo(db=DB, collection=COLLECTION)
    
     def reducer(self, key, values):
         total = int(sum(values))
         if total < MIN_WORD_COUNT:
             return
         metro, word = key
-        self.mongo.insert(dict(
-            metro_area=metro,
-            word=word,
-            count=total
-        ))
-        yield metro, (total, word) 
+        yield metro, (total, word)
+
+    def reducer_init_mongo(self):
+        self.mongo = MongoGeo(db=DB, collection=COLLECTION, timeout=MONGO_TIMEOUT)
+
+    def reducer_mongo(self, metro, values):
+        records = []
+        for record in values:
+            total, word = record
+            records.append(dict(
+                metro_area=metro,
+                word=word,
+                count=total
+            ))
+        self.mongo.insert_many(records)
 
 
 if __name__ == '__main__':
