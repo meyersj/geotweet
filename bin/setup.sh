@@ -5,7 +5,7 @@ set -e
 function dependencies {
     apt-get update
     apt-get install -y python-dev libgeos-dev libspatialindex-dev \
-    build-essential protobuf-compiler libprotobuf-dev \
+    build-essential protobuf-compiler libprotobuf-dev
     curl https://bootstrap.pypa.io/get-pip.py | python
 }
 
