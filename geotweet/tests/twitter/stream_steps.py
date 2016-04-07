@@ -5,7 +5,7 @@ from os.path import dirname
 import sys
 import inspect
 
-from geotweet.twitter.steps import GeoFilterStep, ExtractStep, LogStep
+from geotweet.twitter.stream_steps import GeoFilterStep, ExtractStep, LogStep
 
 
 import geotweet

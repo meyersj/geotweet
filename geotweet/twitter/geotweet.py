@@ -8,7 +8,7 @@ sys.path.append(root)
 
 from stream import TwitterStream
 from load import LogListener
-from steps import GeoFilterStep, ExtractStep, LogStep
+from stream_steps import GeoFilterStep, ExtractStep, LogStep
 
 import logging
 logger = logging.getLogger(__name__)
