@@ -8,7 +8,7 @@ import shapely
 from shapely.geometry import shape
 from shapely.geometry.point import Point
 from rtree import index
-
+from pyproj import Proj, transform
 from reader import FileReader
 
 
@@ -21,6 +21,14 @@ try:
     COUNTIES_GEOJSON = os.environ['COUNTIES_GEOJSON_LOCAL']
 except KeyError:
     COUNTIES_GEOJSON = COUNTIES_GEOJSON_URL
+
+ESRI102500 = '+proj=eqdc +lat_0=39 +lon_0=-96 +lat_1=33 +lat_2=45 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs'
+
+ 
+def project(lonlat):
+    proj4326= Proj(init='epsg:4326')
+    proj102500 = Proj(ESRI102500)
+    return transform(proj4326, proj102500, *lonlat)
 
 
 class SpatialLookup(FileReader):
@@ -66,7 +74,7 @@ class SpatialLookup(FileReader):
             return True
         return False
 
-    def get_object(self, point):
+    def get_object(self, point, buffer_size=0):
         """ lookup object based on point as [longitude, latitude] """
         # first search bounding boxes
         # idx.intersection method modifies input if it is a list
@@ -77,19 +85,32 @@ class SpatialLookup(FileReader):
         # point must be in the form (minx, miny, maxx, maxy) or (x, y)
         if len(tmp) not in [2, 4]:
             return None
-        for bbox_match in self.idx.intersection(tmp, objects=True):
+
+        geo = Point(tmp)
+        if buffer_size:
+            geo = geo.buffer(buffer_size)
+        nearest = None
+        for bbox_match in self.idx.intersection(geo.bounds, objects=True):
             # check actual geometry
             record = bbox_match.object
-            if record['geometry'].intersects(Point(tmp)):
-                return record['properties']
-        return None
-   
+            if record['geometry'].intersects(geo):
+                dist = Point(tmp).distance(record['geometry'])
+                if not nearest or dist < nearest['dist']:
+                    nearest = dict(data=record, dist=dist)
+        if not nearest:
+            return None
+        return nearest['data']['properties']
+    
+    def _build_obj(self, feature):
+        feature['geometry'] = shape(feature['geometry'])
+        return feature
+
     def _build(self, src, location):
         """ Build a RTree index to disk using bounding box of each feature """
         geojson = json.loads(self.read(src))
         def generate():
             for i, feature in enumerate(geojson['features']):
-                feature['geometry'] = shape(feature['geometry'])
+                feature = self._build_obj(feature)
                 yield i, feature['geometry'].bounds, feature
         if geojson:
             # create index, flush to disk which disables access then re-enable access
