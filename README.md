@@ -8,10 +8,12 @@ MIT License. Copyright (c) 2016 Jeffrey Alan Meyers. See `LICENSE.md`
 
 ### About
 
-This project contains code to log tweets from the
+This project contains command line utility to log tweets from the
 [Twitter Streaming API](https://dev.twitter.com/streaming/reference/post/statuses/filter)
 and load them into Amazon S3 Buckets.
 The log files in S3 are then used as input for Elastic MapReduce jobs.
+Also contains utility to download Geofabrik OSM extracts, filter out POI nodes
+and load into S3 Buckets.
 
 
 ### Install
