@@ -40,7 +40,7 @@ class BuildTests(unittest.TestCase):
         self.location = self.lookup.get_location(self.src)
         clear(self.location)
         # build RTree index at `location` 
-        self.lookup._build(self.src, self.location)
+        self.lookup._build_from_geojson(self.src, self.location)
 
     def tearDown(self):
         """ clean up """
