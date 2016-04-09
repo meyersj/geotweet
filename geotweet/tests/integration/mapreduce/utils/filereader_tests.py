@@ -4,14 +4,14 @@ from os.path import dirname
 import sys
 from urllib2 import HTTPError
 
-root = dirname(dirname(dirname(dirname(os.path.abspath(__file__)))))
-sys.path.append(root)
+#root = dirname(dirname(dirname(dirname(dirname(os.path.abspath(__file__))))))
+#sys.path.append(root)
 
+from . import ROOT as GEOTWEET_DIR
 from geotweet.mapreduce.utils.reader import FileReader
 from geotweet.mapreduce.utils.words import STOPWORDS_LIST_URL
 
 
-GEOTWEET_DIR = root
 STOPWORDS_LIST_LOCAL = os.path.join(GEOTWEET_DIR, 'data/stopwords.txt')
 
 

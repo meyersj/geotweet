@@ -5,13 +5,10 @@ import sys
 
 from rtree import index
 
-root = dirname(dirname(dirname(dirname(os.path.abspath(__file__)))))
-sys.path.append(root)
-
+from . import ROOT as GEOTWEET_DIR  # also adds ROOT to path to import from geotweet
 from geotweet.mapreduce.utils.lookup import project, SpatialLookup
 
 
-GEOTWEET_DIR = root
 TEST_GEOJSON_LOCAL = os.path.join(GEOTWEET_DIR, 'data/geo/us_states102005.geojson')
 MAX_COUNT = 100
 RESULTS_COUNT = 51

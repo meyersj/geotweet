@@ -4,9 +4,7 @@ import os
 from os.path import dirname
 import sys
 
-root = dirname(dirname(dirname(os.path.abspath(__file__))))
-sys.path.append(root)
-
+from . import ROOT
 from geotweet.twitter.stream import TwitterStream
 from geotweet.twitter.steps import ProcessStep
 

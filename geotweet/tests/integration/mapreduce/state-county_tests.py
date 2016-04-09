@@ -7,7 +7,7 @@ import json
 from mrjob.job import MRJob
 import Geohash
 
-root = dirname(dirname(dirname(os.path.abspath(__file__))))
+root = dirname(dirname(dirname(dirname(os.path.abspath(__file__)))))
 sys.path.append(root)
 
 GEOTWEET_DIR = root
