@@ -6,9 +6,7 @@ import json
 
 from rtree import index
 
-root = dirname(dirname(dirname(os.path.abspath(__file__))))
-sys.path.append(root)
-
+from . import ROOT
 from geotweet.mapreduce.utils.lookup import project, SpatialLookup
 
 
@@ -50,7 +48,7 @@ def init_polygon_1_index():
 def init_polygon_2_index():
     location = init_polygon_1_index()
     polygon = location._build_obj(POLYGON_2)
-    location.idx.insert(1, polygon['geometry'].bounds, obj=polygon)
+    location.idx.insert(2, polygon['geometry'].bounds, obj=polygon)
     return location
 
 
