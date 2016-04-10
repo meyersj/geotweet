@@ -87,6 +87,42 @@ class SpatialLookup(FileReader):
             return True
         return False
 
+    def _get_nearest(self, point):
+        nearest = None
+        for bbox_match in self.idx.intersection(point.bounds, objects=True):
+            # check actual geometry after matching bounding box
+            record = bbox_match.object
+            try:
+                if not record['geometry'].intersects(point):
+                    # skip processing current matching bbox
+                    continue
+                # save only nearest record
+                dist = point.distance(record['geometry'])
+                if not nearest or dist < nearest['dist']:
+                    nearest = dict(data=record, dist=dist)
+            except shapely.geos.TopologicalError as e:
+                # geometry is invalid so stop processing
+                pass
+        if nearest:
+            return nearest['data']['properties']
+        return None
+
+    def _get_all_near(self, point):
+        results = []
+        for bbox_match in self.idx.intersection(point.bounds, objects=True):
+            # check actual geometry after matching bounding box
+            record = bbox_match.object
+            try:
+                if not record['geometry'].intersects(point):
+                    # skip processing current matching bbox
+                    continue
+                # return all intersecting records
+                results.append(record['properties'])
+            except shapely.geos.TopologicalError as e:
+                # geometry is invalid so stop processing
+                pass
+        return results
+
     def get_object(self, point, buffer_size=0, multiple=False):
         """ lookup object based on point as [longitude, latitude] """
         # first search bounding boxes
@@ -99,34 +135,13 @@ class SpatialLookup(FileReader):
         if len(tmp) not in [2, 4]:
             return None
 
+        # buffer point if size is specified
         geo = Point(tmp)
         if buffer_size:
             geo = geo.buffer(buffer_size)
-        nearest = None
-        results = []
-        for bbox_match in self.idx.intersection(geo.bounds, objects=True):
-            # check actual geometry
-            record = bbox_match.object
-            try:
-                if not record['geometry'].intersects(geo):
-                    # skip processing current matching bbox
-                    continue
-                if multiple:
-                    # return all intersecting records
-                    results.append(record['properties'])
-                else:
-                    # return only nearest record
-                    dist = Point(tmp).distance(record['geometry'])
-                    if not nearest or dist < nearest['dist']:
-                        nearest = dict(data=record, dist=dist)
-            except shapely.geos.TopologicalError as e:
-                logging.error(e)
-                logging.error(record['properties'])
         if multiple:
-            return results
-        if nearest:
-            return nearest['data']['properties']
-        return None
+            return self._get_all_near(geo)
+        return self._get_nearest(geo)
 
     def _build_obj(self, feature):
         feature['geometry'] = shape(feature['geometry'])
@@ -141,17 +156,17 @@ class SpatialLookup(FileReader):
                 yield i, feature['geometry'].bounds, feature
         if geojson:
             # create index, flush to disk which disables access then re-enable access
-            idx = index.Rtree(location, generate())
+            idx = index.Index(location, generate())
             idx.close()
-            return index.Rtree(location)
+            return index.Index(location)
 
     def _initialize(self):
         """ Build a RTree in memory for features to be added to """
-        return index.Rtree()
+        return index.Index()
 
     def insert(self, key, feature):
         feature = self._build_obj(feature)
-        self.idx.insert(key, feature['geometry'].bounds, obj=feature)
+        self.idx.insert(key, feature['geometry'].bounds, feature)
 
 
 class MetroLookup(SpatialLookup):
