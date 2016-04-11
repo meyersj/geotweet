@@ -62,7 +62,7 @@ class MRStateCountyWordCount(MRJob):
 
     def mapper_init(self):
         """ Download counties geojson from S3 and build spatial index and cache """
-        self.counties = CachedCountyLookup()
+        self.counties = CachedCountyLookup(precision=GEOHASH_PRECISION)
         self.extractor = WordExtractor()
     
     def mapper(self, _, line):
@@ -71,10 +71,10 @@ class MRStateCountyWordCount(MRJob):
         if data['description'] and self.hr_filter(data['description']):
             return
         # project coordinates to ESRI:102005 and encode as geohash
-        lon, lat = project(data['lonlat'])
-        geohash = Geohash.encode(lat, lon, precision=GEOHASH_PRECISION)
+        lonlat = data['lonlat']
+        #geohash = Geohash.encode(lat, lon, precision=GEOHASH_PRECISION)
         # spatial lookup for state and county
-        state, county = self.counties.get(geohash) 
+        state, county = self.counties.get(lonlat)
         if not state or not county:
             return
         # count words
