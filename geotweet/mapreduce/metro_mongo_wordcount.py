@@ -12,13 +12,12 @@ from mrjob.step import MRStep
 try:
     # when running on EMR a geotweet package will be loaded onto PYTHON PATH
     from geotweet.mapreduce.utils.words import WordExtractor
-    from geotweet.mapreduce.utils.lookup import project, MetroLookup
+    from geotweet.mapreduce.utils.lookup import project, CachedMetroLookup
     from geotweet.geomongo.mongo import MongoGeo
-
 except ImportError:
     # running locally
     from utils.words import WordExtractor
-    from utils.lookup import project, MetroLookup
+    from utils.lookup import project, CachedMetroLookup
     parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.insert(0, parent) 
     from geomongo.mongo import MongoGeo
@@ -34,6 +33,18 @@ MIN_WORD_COUNT = 2
 METERS_PER_MILE = 1609
 METRO_DISTANCE = 50 * METERS_PER_MILE
 MONGO_TIMEOUT = 20 * 1000
+"""
+https://en.wikipedia.org/wiki/Geohash
+
+geohash
+precision   width   height
+4           39.1km  19.5km
+5           4.9km   4.9km
+6           1.2km   609.4m
+7           152.9m  152.4m
+8           38.2m   19m
+"""
+GEOHASH_PRECISION = 7
 
 
 class MRMetroMongoWordCount(MRJob):
@@ -82,7 +93,7 @@ class MRMetroMongoWordCount(MRJob):
     
     def mapper_init(self):
         """ build local spatial index of US metro areas """
-        self.lookup = MetroLookup()
+        self.lookup = CachedMetroLookup(precision=GEOHASH_PRECISION)
         self.extractor = WordExtractor()
    
     def mapper(self, _, line):
@@ -92,11 +103,9 @@ class MRMetroMongoWordCount(MRJob):
         if data['description'] and re.findall(expr, data['description']):
             return
         # lookup nearest metro area
-        lonlat = project(data['lonlat'])
-        nearest = self.lookup.get_object(lonlat, buffer_size=METRO_DISTANCE)
-        if not nearest:
+        metro = self.lookup.get(data['lonlat'], METRO_DISTANCE)
+        if not metro:
             return
-        metro = nearest['NAME10']
         # count each word
         for word in self.extractor.run(data['text']):
             yield (metro, word), 1
@@ -123,6 +132,7 @@ class MRMetroMongoWordCount(MRJob):
                 word=word,
                 count=total
             ))
+            yield (metro, total), word
         self.mongo.insert_many(records)
 
 
