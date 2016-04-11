@@ -141,11 +141,11 @@ class CachedLookup(SpatialLookup):
         """ lookup state and county based on geohash of coordinates from tweet """
         geohash = Geohash.encode(*point, precision=self.precision)
         key = (geohash, buffer_size, multiple)
-        #if key in self.geohash_cache:
+        if key in self.geohash_cache:
             # cache hit on geohash
-        #    self.hit += 1
+            self.hit += 1
             #print self.hit, self.miss
-        #    return self.geohash_cache[key]
+            return self.geohash_cache[key]
         self.miss += 1
         # cache miss on geohash
         # project point to ESRI:102005
