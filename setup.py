@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='geotweet',
-    version='0.1.23',
+    version='0.2.1',
     description='Fetch geographic tweets from Twitter Streaming API',
     author='Jeffrey Alan Meyers',
     author_email='jeffrey.alan.meyers@gmail.com',
@@ -22,7 +22,7 @@ setup(
         'argparse',
         'boto3',
         'mrjob',
-        'requests',
+        'requests>=2.0',
         'python-twitter',
         'pymongo',
         'Geohash',
