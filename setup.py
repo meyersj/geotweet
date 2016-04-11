@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='geotweet',
-    version='0.2.1',
+    version='0.2.4',
     description='Fetch geographic tweets from Twitter Streaming API',
     author='Jeffrey Alan Meyers',
     author_email='jeffrey.alan.meyers@gmail.com',
@@ -21,7 +21,7 @@ setup(
         'setuptools>=7.0',
         'argparse',
         'boto3',
-        'mrjob',
+        'mrjob>=0.5.0',
         'requests>=2.0',
         'python-twitter',
         'pymongo',
@@ -29,6 +29,7 @@ setup(
         'Shapely',
         'Rtree',
         'pyproj',
-        'imposm.parser'
+        'imposm.parser',
+        'ujson'
     ]
 )
