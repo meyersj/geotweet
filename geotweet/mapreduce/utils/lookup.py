@@ -9,13 +9,12 @@ import shapely
 from shapely.geometry import shape
 from shapely.geometry.point import Point
 from rtree import index
-from pyproj import Proj, transform
 from reader import FileReader
 
+from .proj import project, rproject
 
-# location of RTree (will only be built once and shared between mappers)
-RTREE_LOCATION = '/tmp/geotweet-rtree-{0}'
-# reference files to be downloaded from S3
+
+# reference files to be downloaded from S3 once and stored locally
 AWS_BUCKET = "https://s3-us-west-2.amazonaws.com/jeffrey.alan.meyers.bucket"
 COUNTIES_GEOJSON = os.path.join(AWS_BUCKET, "geotweet/us_counties102005.geojson")
 METRO_GEOJSON = os.path.join(AWS_BUCKET, "geotweet/us_metro_areas102005.geojson")
@@ -26,25 +25,11 @@ if 'METRO_GEOJSON_LOCAL' in os.environ:
     METRO_GEOJSON = os.environ['METRO_GEOJSON_LOCAL']
 
 
-# Convert between geographic and projected coordinate systems
-# Geographic: EPSG Projection 4326 - WGS 84
-proj4326= Proj(init='epsg:4326')
-# Projected: ESRI Projection 102005 - USA Contiguous Equidistant Conic
-ESRI102500 = '+proj=eqdc +lat_0=39 +lon_0=-96 ' + \
-    '+lat_1=33 +lat_2=45 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs'
-proj102500 = Proj(ESRI102500)
-
-def project(lonlat):
-    return transform(proj4326, proj102500, *lonlat)
-
-def rproject(lonlat):
-    return transform(proj102500, proj4326, *lonlat)
-
-
 class SpatialLookup(FileReader):
     """ Create a indexed spatial lookup of a geojson file """
     
     idx = None
+    data_store = {}
 
     def __init__(self, src=None):
         if src:
@@ -52,48 +37,20 @@ class SpatialLookup(FileReader):
                 error = "Arg src=< {0} > is invalid."
                 error += " Must be existing file or valid url that starts with 'http'"
                 raise ValueError(error.format(src))
-            # location of index based on hash on input src name
-            location = self.get_location(src)
-            if not self._exists(location):
-                # index does not create so fetch data and build it
-                self.idx = self._build_from_geojson(src, location)
-            else:
-                # index on filesystem already exists
-                self.idx = index.Rtree(location)
+            # build index from geojson
+            self.data_store, self.idx = self._build_from_geojson(src)
         else:
             # create empty index in memory
-            self.idx = self._initialize()
+            self.data_store, self.idx = self._initialize()
 
-    def get_location(self, src):
-        digest = self.digest(src)
-        if not digest:
-            return None
-        return RTREE_LOCATION.format(digest)
-
-    def digest(self, src):
-        if not src or type(src) != str:
-            return None
-        m = hashlib.md5()
-        if self.is_url(src):
-            m.update(src)
-        else:
-            m.update(os.path.abspath(src))
-        return m.hexdigest()
-
-    def _exists(self, location):
-        dat = location + ".dat"
-        idx = location + ".idx"
-        if os.path.isfile(dat) and os.path.isfile(idx):
-            return True
-        return False
-
-    def _get_nearest(self, point):
+    def _get_nearest(self, point, geom):
         nearest = None
-        for bbox_match in self.idx.intersection(point.bounds, objects=True):
+        for bbox_match in self.idx.intersection(geom.bounds):
             # check actual geometry after matching bounding box
-            record = bbox_match.object
+            #record = bbox_match.object
+            record = self.data_store[bbox_match]
             try:
-                if not record['geometry'].intersects(point):
+                if not record['geometry'].intersects(geom):
                     # skip processing current matching bbox
                     continue
                 # save only nearest record
@@ -107,13 +64,14 @@ class SpatialLookup(FileReader):
             return nearest['data']['properties']
         return None
 
-    def _get_all_near(self, point):
+    def _get_all_near(self, geom):
         results = []
-        for bbox_match in self.idx.intersection(point.bounds, objects=True):
+        for bbox_match in self.idx.intersection(geom.bounds):
             # check actual geometry after matching bounding box
-            record = bbox_match.object
+            #record = bbox_match.object
+            record = self.data_store[bbox_match]
             try:
-                if not record['geometry'].intersects(point):
+                if not record['geometry'].intersects(geom):
                     # skip processing current matching bbox
                     continue
                 # return all intersecting records
@@ -136,64 +94,89 @@ class SpatialLookup(FileReader):
             return None
 
         # buffer point if size is specified
-        geo = Point(tmp)
+        geom = tmp = Point(tmp)
         if buffer_size:
-            geo = geo.buffer(buffer_size)
+            geom = tmp.buffer(buffer_size)
         if multiple:
-            return self._get_all_near(geo)
-        return self._get_nearest(geo)
+            return self._get_all_near(geom)
+        return self._get_nearest(tmp, geom)
 
     def _build_obj(self, feature):
         feature['geometry'] = shape(feature['geometry'])
         return feature
 
-    def _build_from_geojson(self, src, location):
+    def _build_from_geojson(self, src):
         """ Build a RTree index to disk using bounding box of each feature """
         geojson = json.loads(self.read(src))
-        def generate():
-            for i, feature in enumerate(geojson['features']):
-                feature = self._build_obj(feature)
-                yield i, feature['geometry'].bounds, feature
-        if geojson:
-            # create index, flush to disk which disables access then re-enable access
-            idx = index.Index(location, generate())
-            idx.close()
-            return index.Index(location)
+        idx = index.Index()
+        data_store = {}
+        for i, feature in enumerate(geojson['features']):
+            feature = self._build_obj(feature)
+            idx.insert(i, feature['geometry'].bounds)
+            data_store[i] = feature
+        return data_store, idx
 
     def _initialize(self):
         """ Build a RTree in memory for features to be added to """
-        return index.Index()
+        return {}, index.Index()
 
     def insert(self, key, feature):
         feature = self._build_obj(feature)
-        self.idx.insert(key, feature['geometry'].bounds, feature)
+        self.data_store[key] = feature
+        self.idx.insert(key, feature['geometry'].bounds)
 
 
-class MetroLookup(SpatialLookup):
-
-    def __init__(self, src=METRO_GEOJSON):
-        super(MetroLookup, self).__init__(src=src)
-
-
-class CachedCountyLookup(SpatialLookup):
+class CachedLookup(SpatialLookup):
     """ Dowload counties geojson, build index and provide lookup functionality """
 
     geohash_cache = {}
 
-    def __init__(self, src=COUNTIES_GEOJSON):
-        super(CachedCountyLookup, self).__init__(src=src)
+    def __init__(self, precision=7,  *args, **kwargs):
+        super(CachedLookup, self).__init__(*args, **kwargs)
+        self.precision = precision
+        self.hit = 0
+        self.miss = 0
 
-    def get(self, geohash):
+    def get(self, point, buffer_size=0, multiple=False):
         """ lookup state and county based on geohash of coordinates from tweet """
-        if geohash in self.geohash_cache:
+        geohash = Geohash.encode(*point, precision=self.precision)
+        key = (geohash, buffer_size, multiple)
+        #if key in self.geohash_cache:
             # cache hit on geohash
-            return self.geohash_cache[geohash]
+        #    self.hit += 1
+            #print self.hit, self.miss
+        #    return self.geohash_cache[key]
+        self.miss += 1
         # cache miss on geohash
-        state = county = None
-        coord = Geohash.decode(geohash)
-        prop = self.get_object([float(coord[1]), float(coord[0])])
-        if prop:
-            state = prop['STATE']
-            county = prop['COUNTY']
-        self.geohash_cache[geohash] = (state, county)
-        return state, county
+        # project point to ESRI:102005
+        proj_point = project(point)
+        args = dict(buffer_size=buffer_size, multiple=multiple)
+        payload = self.get_object(proj_point, **args)
+        self.geohash_cache[key] = payload
+        return payload
+
+
+class CachedCountyLookup(CachedLookup):
+    """ Dowload counties geojson, build index and provide lookup functionality """
+
+    def __init__(self, src=COUNTIES_GEOJSON, **kwargs):
+        super(CachedCountyLookup, self).__init__(src=src, **kwargs)
+
+    def get(self, point):
+        payload = super(CachedCountyLookup, self).get(point)
+        if payload:
+            return payload['STATE'], payload['COUNTY']
+        return None, None
+
+
+class CachedMetroLookup(CachedLookup):
+    """ Dowload metro areas geojson, build index and provide lookup functionality """
+
+    def __init__(self, src=METRO_GEOJSON, **kwargs):
+        super(CachedMetroLookup, self).__init__(src=src, **kwargs)
+
+    def get(self, point, buffer_size):
+        payload = super(CachedMetroLookup, self).get(point, buffer_size=buffer_size)
+        if payload:
+            return payload['NAME10']
+        return None
