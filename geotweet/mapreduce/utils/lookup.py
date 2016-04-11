@@ -139,7 +139,8 @@ class CachedLookup(SpatialLookup):
 
     def get(self, point, buffer_size=0, multiple=False):
         """ lookup state and county based on geohash of coordinates from tweet """
-        geohash = Geohash.encode(*point, precision=self.precision)
+        lon, lat = point
+        geohash = Geohash.encode(lat, lon, precision=self.precision)
         key = (geohash, buffer_size, multiple)
         if key in self.geohash_cache:
             # cache hit on geohash
@@ -149,7 +150,8 @@ class CachedLookup(SpatialLookup):
         self.miss += 1
         # cache miss on geohash
         # project point to ESRI:102005
-        proj_point = project(point)
+        lat, lon = Geohash.decode(geohash)
+        proj_point = project([float(lon), float(lat)])
         args = dict(buffer_size=buffer_size, multiple=multiple)
         payload = self.get_object(proj_point, **args)
         self.geohash_cache[key] = payload
