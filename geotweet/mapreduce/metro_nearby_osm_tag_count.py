@@ -16,6 +16,7 @@ try:
     from geotweet.mapreduce.utils.lookup import CachedMetroLookup, CachedLookup
     from geotweet.mapreduce.utils.proj import project, rproject
     from geotweet.geomongo.mongo import MongoGeo
+    COLLECTION = "metro_osm"
 except ImportError:
     # running locally
     from utils.lookup import CachedMetroLookup, CachedLookup
@@ -23,20 +24,10 @@ except ImportError:
     parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.insert(0, parent) 
     from geomongo.mongo import MongoGeo
-
-
-#logging.basicConfig(stream=sys.stderr, level=logging.INFO)
-# must log to stderr when running on EMR or job will fail
-logger = logging.getLogger(__file__)
-formatter = logging.Formatter('[%(levelname)s] %(message)s')
-handler = logging.StreamHandler(stream=sys.stderr)
-handler.setFormatter(formatter)
-handler.setLevel(logging.INFO)
-logger.addHandler(handler)
+    COLLECTION = "metro_osm_emr"
 
 
 DB = "geotweet"
-COLLECTION = "metro_osm"
 MIN_WORD_COUNT = 2
 METERS_PER_MILE = 1609
 METRO_DISTANCE = 50 * METERS_PER_MILE
@@ -135,18 +126,7 @@ class MRMetroNearbyOSMTagCount(MRJob):
         for i, value in enumerate(values):
             if not value:
                 continue
-            #logger.error(value)
-            #try:
-            #logger.error(type(value))
             value = loads(value)
-            #logger.error(value)
-            #except ValueError as e:
-            #    logger.error(e.__class__.__name__)
-            #    logger.error(str(e))
-            #    logger.error(metro)
-            #    logger.error(i)
-            #    logger.error(value)
-            #    continue
             mr_tag, lonlat, data = value
             if mr_tag == 1:
                 # OSM POI node, add to index
@@ -158,15 +138,15 @@ class MRMetroNearbyOSMTagCount(MRJob):
                 # geotweet, lookup nearest POI from index
                 if not lookup.data_store:
                     return
-                tags = []
+                names = []
                 kwargs = dict(buffer_size=POI_DISTANCE, multiple=True)
                 # lookup nearby POI from Rtree index (caching results)
                 # for any tags we care about emit the tags value and 1
                 for poi in lookup.get(lonlat, **kwargs):
-                    for tag in POI_TAGS:
-                        if tag in poi['tags']:
-                            tags.append(poi['tags'][tag])
-                for osm_tag in set(tags):
+                    if any(tag in poi['tags'] for tag in POI_TAGS):
+                        if 'name' in poi['tags']:
+                            names.append(poi['tags']['name'])  
+                for osm_tag in set(names):
                     if not osm_tag:
                         continue
                     key = (metro, osm_tag.encode('utf-8'))
@@ -174,44 +154,34 @@ class MRMetroNearbyOSMTagCount(MRJob):
 
     def reducer_tag_count(self, key, values):
         total = 0
-        #logger.error(key)
         if not key:
             return
         for value in values:
-            if not value or value == '':
+            if not value:
                 continue
-            #logging.error(value)
-            #logging.error('accept')
             try:
                 value = loads(value)
                 total += int(value)
             except ValueError as e:
-                #logger.info(e)
-                #logger.info(value)
                 continue
-        #logger.error(total)
         if total == 0:
             return
         metro, tag = ujson.loads(key)
         yield metro.encode('utf-8'), dumps((total, tag))
 
     def reducer_init_mongo(self):
-        pass
-        #self.mongo = MongoGeo(db=DB, collection=COLLECTION, timeout=MONGO_TIMEOUT)
+        self.mongo = MongoGeo(db=DB, collection=COLLECTION, timeout=MONGO_TIMEOUT)
     
     def reducer_mongo(self, metro, values):
-        #logger.info(metro)
         if not metro:
             return
         records = []
         for record in values:
             if not record:
                 continue
-            #logger.info(record)
             try:
                 total, tag = ujson.loads(record)
             except ValueError as e:
-                #logger.info(e)
                 continue
             records.append(dict(
                 metro_area=metro,
@@ -219,7 +189,7 @@ class MRMetroNearbyOSMTagCount(MRJob):
                 count=total
             ))
             yield dumps((metro, total)), tag.encode('utf-8')
-        #self.mongo.insert_many(records)
+        self.mongo.insert_many(records)
 
 
 if __name__ == '__main__':
