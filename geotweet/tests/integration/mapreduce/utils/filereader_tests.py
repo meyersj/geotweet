@@ -3,9 +3,7 @@ import os
 from os.path import dirname
 import sys
 from urllib2 import HTTPError
-
-#root = dirname(dirname(dirname(dirname(dirname(os.path.abspath(__file__))))))
-#sys.path.append(root)
+import json
 
 from . import ROOT as GEOTWEET_DIR
 from geotweet.mapreduce.utils.reader import FileReader
@@ -13,6 +11,8 @@ from geotweet.mapreduce.utils.words import STOPWORDS_LIST_URL
 
 
 STOPWORDS_LIST_LOCAL = os.path.join(GEOTWEET_DIR, 'data/stopwords.txt')
+AWS_BUCKET = "https://s3-us-west-2.amazonaws.com/jeffrey.alan.meyers.bucket"
+METRO_GEOJSON = os.path.join(AWS_BUCKET, "geotweet/us_metro_areas102005.geojson")
 
 
 class ReadTests(unittest.TestCase):
@@ -45,6 +45,11 @@ class ReadTests(unittest.TestCase):
         src = self.invalid_local
         with self.assertRaises(ValueError):
             retrieved = self.fr.read(src) 
+
+    def test_aws_remote(self):
+        text = self.fr.read(METRO_GEOJSON)
+        self.assertIsNotNone(text, "Failed to open {0}".format(METRO_GEOJSON))
+        self.assertIsNotNone(json.loads(text)['type'], "type field not in data")
 
 
 if __name__ == "__main__":
