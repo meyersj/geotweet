@@ -16,7 +16,7 @@ try:
     from geotweet.mapreduce.utils.lookup import CachedMetroLookup, CachedLookup
     from geotweet.mapreduce.utils.proj import project, rproject
     from geotweet.geomongo.mongo import MongoGeo
-    COLLECTION = "metro_osm"
+    COLLECTION = "metro_osm_emr"
 except ImportError:
     # running locally
     from utils.lookup import CachedMetroLookup, CachedLookup
@@ -24,7 +24,7 @@ except ImportError:
     parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.insert(0, parent) 
     from geomongo.mongo import MongoGeo
-    COLLECTION = "metro_osm_emr"
+    COLLECTION = "metro_osm"
 
 
 DB = "geotweet"
@@ -189,7 +189,8 @@ class MRMetroNearbyOSMTagCount(MRJob):
                 count=total
             ))
             yield dumps((metro, total)), tag.encode('utf-8')
-        self.mongo.insert_many(records)
+        if records:
+            self.mongo.insert_many(records)
 
 
 if __name__ == '__main__':
