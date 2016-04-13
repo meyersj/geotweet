@@ -3,7 +3,6 @@ import os
 from os.path import dirname
 import re
 import json
-import logging
 
 from mrjob.job import MRJob
 from mrjob.step import MRStep
@@ -24,10 +23,6 @@ except ImportError:
     parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.insert(0, parent) 
     from geomongo.mongo import MongoGeo
-
-
-# must log to stderr when running on EMR or job will fail
-logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
 
 DB = "geotweet"
