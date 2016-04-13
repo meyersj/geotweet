@@ -2,7 +2,6 @@ import sys
 import os
 import hashlib
 import json
-import logging
 
 import Geohash
 import shapely
