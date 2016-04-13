@@ -202,7 +202,7 @@ pip install -r requirements.txt         # plus required system packages
 
 Run MapReduce jobs
 ```bash
-# cd /path/to/geotweet/bin
+cd /path/to/geotweet/bin
 ```
 ##### Job 1
 MapReduce Word Count from tweets broken down by
@@ -255,7 +255,7 @@ Output stored in MongoDB `db=geotweet` as `collection=metro_osm` as documents
 
 Run **EMR** Job
 
-First build a package that will be used in bootstrap script
+First build a package that will be used to bootstrap the hadoop nodes
 ```bash
 cd /path/to/geotweet/repo
 
@@ -263,7 +263,7 @@ cd /path/to/geotweet/repo
 python setup.py sdist   
 ```
 
-Set all of the required config parameters, set all paths are corrected
+Set all of the required config parameters, set all paths
 ```
 cp example_conf/mrjob.conf ~/.mrjob.conf
 vim ~/.mrjob.conf       
@@ -275,7 +275,7 @@ Setup input and output S3 buckets
 src=s3://some.s3.bucket/input                               # bucket with data from `geotweet load` and `geotweet osm`
 dst=s3://some.s3.bucket/output/<new folder>                 # the new folder should not already exist
 
-# start job and supress stdout output (will go to s3) 
+# start job and supress stdout output (results will go to S3) 
 python geotweet/mapreduce/state_county_wordcount.py $src -r emr --output-dir=$dst --no-output       
 ```
 
@@ -283,9 +283,11 @@ python geotweet/mapreduce/state_county_wordcount.py $src -r emr --output-dir=$ds
 
 Tests available to run after cloning and installing dependencies.
 ```
-nosetests geotweet/tests/unit/*        
-nosetests geotweet/tests/integration/*  # requires environment variables listed above to be set
-                                        # and MongoDB instance running locally
+nosetests geotweet/tests/unit/* 
+
+# requires environment variables specified above to be set
+# and MongoDB instance running locally
+nosetests geotweet/tests/integration/*  
 ```
 
 ### Virtual Machine
