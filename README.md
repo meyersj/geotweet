@@ -225,7 +225,9 @@ Requires MongoDB instance
 In each Map Task, build a local spatial index of metro areas.
 For each tweet do a spatial lookup and emit words.
 Ouput is word count in tweets grouped by metro areas.
-Persist final output to Mongo.
+Will persist final output to MongoDB if `GEOTWEET_MONGODB_URI`
+is set to a valid uri.
+
 ```bash
 export GEOTWEET_MONGODB_URI="mongodb://127.0.0.1:27017"
 python metro_mongo_wordcount.py $data
