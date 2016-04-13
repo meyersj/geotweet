@@ -172,7 +172,7 @@ class POINearbyTweetsMRJob(MRJob):
             output = "{0}\t{1}\t{2}"
             output = output.format(metro.encode('utf-8'), total, poi.encode('utf-8'))
             yield None, output
-        if self.mongo
+        if self.mongo:
             self.mongo.insert_many(records)
 
 
