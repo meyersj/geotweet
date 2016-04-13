@@ -11,8 +11,13 @@ MIT License. Copyright (c) 2016 Jeffrey Alan Meyers. See `LICENSE.md`
 This project contains a command line utility to log tweets from the
 [Twitter Streaming API](https://dev.twitter.com/streaming/reference/post/statuses/filter)
 and load them into Amazon S3 Buckets.
-You can also download Geofabrik OSM extracts, filter out Point-of-Interest nodes and load them data S3 Buckets.
+You can also download Geofabrik OpenStreetMap extracts, filter out Point-of-Interest nodes and load them data S3 Buckets.
 The OSM and Twitter log files in S3 are used as input for Elastic MapReduce jobs.
+
+[Example output](https://raw.githubusercontent.com/meyersj/geotweet/master/mapreduce_results/poi-nearby.log.sorted)
+after processing 2GB of tweets and the entire USA OSM extract with the
+[poi_nearby_osm.py](https://github.com/meyersj/geotweet/blob/master/geotweet/mapreduce/poi_nearby_tweets.py)
+MapReduce job.
 
 
 ### Install
