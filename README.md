@@ -266,17 +266,17 @@ python setup.py sdist
 Set all of the required config parameters, set all paths
 ```
 cp example_conf/mrjob.conf ~/.mrjob.conf
-vim ~/.mrjob.conf       
+vim ~/.mrjob.conf  
 ```
 
-Setup input and output S3 buckets
+Configure the job with correct input and output buckets
 ```
-# set input/output S3 buckets
-src=s3://some.s3.bucket/input                               # bucket with data from `geotweet load` and `geotweet osm`
-dst=s3://some.s3.bucket/output/<new folder>                 # the new folder should not already exist
+cd /path/to/geotweet/bin
+vim emrjob_runner       # make sure you set the `src` and `dst` S3 buckets
 
-# start job and supress stdout output (results will go to S3) 
-python geotweet/mapreduce/state_county_wordcount.py $src -r emr --output-dir=$dst --no-output       
+./emrjob_runner state-county-words
+./emrjob_runner metro-words
+./emrjob_runner poi-nearby
 ```
 
 ### Tests
