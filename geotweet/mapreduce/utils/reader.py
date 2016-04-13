@@ -38,9 +38,12 @@ class FileReader(object):
         if not self.is_url(src):
             return open(src, 'r').read().decode('latin-1').encode('utf-8')
         tmp = self.get_location(src)
+        # if src poits to url that was already downloaded
+        # read from local file instead
         if os.path.isfile(tmp):
             with open(tmp, 'r') as f:
                 return f.read()
+        # download file and write to local filesystem before returning
         response = urllib2.urlopen(src)
         data = response.read().decode('latin-1').encode('utf-8')
         with open(tmp, 'w') as f:
