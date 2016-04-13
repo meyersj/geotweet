@@ -5,7 +5,6 @@ import time
 import twitter as twitter
 
 import logging
-logger = logging.getLogger(__name__)
 
 
 class TwitterClient(object):
@@ -20,7 +19,7 @@ class TwitterClient(object):
             )
             self.api.VerifyCredentials()
         except twitter.error.TwitterError as e:
-            logger.error("Error connecting to twitter API " + str(e))
+            logging.error("Error connecting to twitter API " + str(e))
             sys.exit(1)
 
 
@@ -43,7 +42,7 @@ class TwitterStream(object):
         for env in self.ENVVARS:
             if not os.getenv(env, None):
                 value = "environment variable {0} not set".format(env)
-                logger.error(value)
+                logging.error(value)
                 raise EnvironmentError(value)
     
     def stream(self, streamer, process_step=None, timeout=0):
@@ -55,7 +54,7 @@ class TwitterStream(object):
             if process_step:
                 process_step.process(record)
             else:
-                logger.info(json.dumps(record))
+                logging.info(json.dumps(record))
 
     def start(self, process_step=None, timeout=0, locations=None):
         if locations:

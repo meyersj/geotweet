@@ -7,7 +7,6 @@ import shutil
 import boto3
 
 import logging
-logger = logging.getLogger(__name__)
 
 
 POLL_INTERVAL = 60
@@ -30,13 +29,13 @@ class LogListener(object):
         try:
             self.s3.valid()
         except EnvironmentError as e:
-            logger.error(e)
+            logging.error(e)
             sys.exit(1)
 
     def start(self):
         if not os.path.isdir(self.log_dir):
             msg = "Directory < {0} > does not exist".format(self.log_dir)
-            logger.error(msg)
+            logging.error(msg)
             sys.exit(1)
 
         pattern = 'twitter-stream.log.*'
@@ -49,9 +48,9 @@ class LogListener(object):
         if not self.s3:
             return
         msg = "Loading {0} to S3 bucket {1}".format(log, self.bucket)
-        logger.info(msg)
+        logging.info(msg)
         self.s3.store(log)
-        logger.info("Success loading {0}".format(log))
+        logging.info("Success loading {0}".format(log))
         self.archive(log)
 
     def archive(self, log):
@@ -59,9 +58,9 @@ class LogListener(object):
             filepath = os.path.dirname(log)
             filename = os.path.basename(log)
             archive = os.path.join(filepath, 'loaded.{0}'.format(filename))
-            logger.info("Archiving {0} to {1}".format(log, archive))
+            logging.info("Archiving {0} to {1}".format(log, archive))
             shutil.copyfile(log, archive)
-        logger.info("Removing log file {0}".format(log))
+        logging.info("Removing log file {0}".format(log))
         os.remove(log)
 
 

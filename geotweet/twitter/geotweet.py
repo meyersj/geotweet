@@ -11,7 +11,6 @@ from load import LogListener
 from stream_steps import GeoFilterStep, ExtractStep, LogStep
 
 import logging
-logger = logging.getLogger(__name__)
 
 
 # Bounding Box: [Lon,Lat SW corner, Lon,Lat NE corner]
@@ -70,12 +69,12 @@ class Geotweet(object):
             os.mkdir(self.log_dir)
         except OSError:
             msg = "Output log directory < {0} > already exists".format(self.log_dir)
-            logger.debug(msg)
+            logging.debug(msg)
         log = os.path.join(self.log_dir, 'twitter-stream.log')
-        logger.info("Starting Twitter Streaming API")
-        logger.info("Streaming to output log: {0}".format(log))
-        logger.info("Log Interval (min): {0}".format(self.log_interval))
-        logger.info("Bounding Box: {0}".format(self.bbox))
+        logging.info("Starting Twitter Streaming API")
+        logging.info("Streaming to output log: {0}".format(log))
+        logging.info("Log Interval (min): {0}".format(self.log_interval))
+        logging.info("Bounding Box: {0}".format(self.bbox))
         # initialize processing step chain
         self.add_step(GeoFilterStep())
         self.add_step(ExtractStep())
@@ -85,8 +84,8 @@ class Geotweet(object):
 
     def load(self):
         msg = "Start listening for events in directory: {0}"
-        logger.info(msg.format(self.log_dir))
-        logger.info("AWS Bucket: {0}".format(self.bucket))
-        logger.info("AWS Region: {0}".format(self.region))
+        logging.info(msg.format(self.log_dir))
+        logging.info("AWS Bucket: {0}".format(self.bucket))
+        logging.info("AWS Region: {0}".format(self.region))
         # start listener (does not return)
         LogListener(self.log_dir, self.bucket, self.region).start()

@@ -3,7 +3,6 @@ import json
 from logging.handlers import TimedRotatingFileHandler
 
 import logging
-logger = logging.getLogger(__name__)
 
 
 def get_rotating_logger(logfile, interval, when="M"):

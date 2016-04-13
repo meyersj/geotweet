@@ -5,7 +5,6 @@ import pymongo
 from pymongo import MongoClient
 
 import logging
-logger = logging.getLogger(__name__)
 
 
 MONGODB_URI = os.getenv('GEOTWEET_MONGODB_URI', 'mongodb://127.0.0.1:27017')
@@ -33,21 +32,21 @@ class Mongo(object):
         try:
             self.collection.insert_one(data)
         except pymongo.errors.DuplicateKeyError as e:
-            logger.warn(str(e))
-            logger.warn("Record already exists in database. Skipping")
+            logging.warn(str(e))
+            logging.warn("Record already exists in database. Skipping")
         except pymongo.errors.WriteError as e:
-            logger.warn(str(e))
-            logger.warn("Write Error")
+            logging.warn(str(e))
+            logging.warn("Write Error")
 
     def insert_many(self, data):
         try:
             self.collection.insert_many(data)
         except pymongo.errors.DuplicateKeyError as e:
-            logger.warn(str(e))
-            logger.warn("Record already exists in database. Skipping")
+            logging.warn(str(e))
+            logging.warn("Record already exists in database. Skipping")
         except pymongo.errors.WriteError as e:
-            logger.warn(str(e))
-            logger.warn("Write Error")
+            logging.warn(str(e))
+            logging.warn("Write Error")
 
 
 class MongoGeo(Mongo):
