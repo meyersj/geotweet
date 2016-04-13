@@ -303,6 +303,5 @@ vagrant up
 vagrant ssh
 cd /vagrant   # contains repository
 
-# all packages are already installed
-# geotweet executable is on your path
+bin/mrjob_runner poi-nearby
 ```
