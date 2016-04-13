@@ -301,7 +301,7 @@ cd geotweet
 vagrant box add ubuntu/trusty64
 vagrant up
 vagrant ssh
-cd /vagrant   # contains repository
+cd /vagrant/bin
 
-bin/mrjob_runner poi-nearby
+./mrjob_runner poi-nearby
 ```
