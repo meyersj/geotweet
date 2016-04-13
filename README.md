@@ -244,8 +244,8 @@ For each input record look up metro area and emit data using metro as key
 and tag is tweet or POI.
 
 In reduce for each metro area, build index of POI nodes, then do
-spatial search for nearby POIs for each tweet. Emit values
-of osm tags for nearby POIs.
+spatial search for nearby POIs for each tweet. Emit name of
+each nearby POI.
 
 Persis results to MongoDB
 
@@ -257,8 +257,8 @@ python metro_nearby_osm_tag_count.py $data
 Output stored in MongoDB `db=geotweet` as `collection=metro_osm` as documents
 ```
 {
-    metro_area:   "Portland, OR--WA",
-    word:         "bar",
+    metro_area:  "Portland, OR--WA",
+    poi:         "Stumptown",
     count:        124
 }
 ```
