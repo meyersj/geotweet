@@ -7,11 +7,14 @@ function dependencies {
     apt-get install -y python-dev libgeos-dev libspatialindex-dev \
             build-essential protobuf-compiler libprotobuf-dev
     curl https://bootstrap.pypa.io/get-pip.py | python
+    pip install virtualenv
 }
 
 
 function python_env {
-    pip install -r /vagrant/requirements.txt
+    cd /vagrant
+    virtualenv env
+    ./env/bin/pip install -r /vagrant/requirements.txt
 }
 
 
