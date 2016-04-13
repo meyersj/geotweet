@@ -5,6 +5,7 @@ import re
 from mrjob.job import MRJob
 from mrjob.step import MRStep
 from mrjob.protocol import JSONProtocol, JSONValueProtocol, RawValueProtocol
+from pymongo.errors import ServerSelectionTimeoutError
 
 try:
     # when running on EMR the geotweet package will be installed with pip
@@ -150,8 +151,12 @@ class POINearbyTweetsMRJob(MRJob):
 
     def reducer_init_output(self):
         """ establish connection to MongoDB """
-        self.mongo = MongoGeo(db=DB, collection=COLLECTION, timeout=MONGO_TIMEOUT)
-    
+        try:
+            self.mongo = MongoGeo(db=DB, collection=COLLECTION, timeout=MONGO_TIMEOUT)
+        except ServerSelectionTimeoutError:
+            # failed to connect to running MongoDB instance
+            self.mongo = None
+
     def reducer_output(self, metro, values):
         """ store each record in MongoDB and output tab delimited lines """
         records = []
@@ -167,7 +172,8 @@ class POINearbyTweetsMRJob(MRJob):
             output = "{0}\t{1}\t{2}"
             output = output.format(metro.encode('utf-8'), total, poi.encode('utf-8'))
             yield None, output
-        self.mongo.insert_many(records)
+        if self.mongo
+            self.mongo.insert_many(records)
 
 
 if __name__ == '__main__':
