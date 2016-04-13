@@ -1,18 +1,13 @@
 import sys
 import os
-from os.path import dirname
 import re
-import logging
-import resource
 
 from mrjob.job import MRJob
 from mrjob.step import MRStep
-from mrjob.protocol import RawValueProtocol, RawProtocol, JSONProtocol
-import Geohash
-import ujson
+from mrjob.protocol import JSONProtocol, JSONValueProtocol, RawValueProtocol
 
 try:
-    # when running on EMR a geotweet package will be loaded onto PYTHON PATH
+    # when running on EMR the geotweet package will be installed with pip
     from geotweet.mapreduce.utils.lookup import CachedMetroLookup, CachedLookup
     from geotweet.mapreduce.utils.proj import project, rproject
     from geotweet.geomongo.mongo import MongoGeo
@@ -34,6 +29,8 @@ METRO_DISTANCE = 50 * METERS_PER_MILE
 POI_DISTANCE = 100
 MONGO_TIMEOUT = 30 * 1000
 POI_TAGS = ["amenity", "builing", "shop", "office", "tourism"]
+METRO_GEOHASH_PRECISION = 7
+POI_GEOHASH_PRECISION = 8
 """
 https://en.wikipedia.org/wiki/Geohash
 
@@ -45,72 +42,70 @@ precision   width   height
 7           152.9m  152.4m
 8           38.2m   19m
 """
-GEOHASH_PRECISION = 7 
 
 
-def dumps(src):
-    return ujson.dumps(src, ensure_ascii=False)
-
-
-def loads(src):
-    return ujson.loads(src)
-
-
-class MRMetroNearbyOSMTagCount(MRJob):
-    """ """
+class POINearTweetsMRJob(MRJob):
+    """ Count common OSM points-of-interest around Tweets with coordinates """
     
-    INPUT_PROTOCOL = RawValueProtocol
-    INTERNAL_PROTOCOL = RawProtocol
-    OUTPUT_PROTOCOL = RawProtocol
+    INPUT_PROTOCOL = JSONValueProtocol
+    INTERNAL_PROTOCOL = JSONProtocol
+    OUTPUT_PROTOCOL = RawValueProtocol
     SORT_VALUES = True
     
     def steps(self):
         return [
-            # lookup metro area for each geotweet and osm POI
-            # and emit to same reducer to perform POI lookup
+            # 1. lookup metro area for each geotweet and osm POI
+            #     emit to same reducer to perform POI lookup
+            # 2. lookup nearby osm POIs around each geotweet
+            # 3. emit metro area + name of POI and 1 to count
             MRStep(
                 mapper_init=self.mapper_init_metro,
                 mapper=self.mapper_metro,
                 reducer=self.reducer_metro
             ),
-            # lookup nearby POIs around geotweet
-            # emit each OSM tag value that we are interested in 
+            # aggregate count for each (metro area, POI) 
             MRStep(
-                reducer=self.reducer_tag_count
+                reducer=self.reducer_count
             ),
-            # count POI tags for each metro area 
+            # convert output to final form and persist to Mongo
             MRStep(
-                reducer_init=self.reducer_init_mongo,
-                reducer=self.reducer_mongo
+                reducer_init=self.reducer_init_output,
+                reducer=self.reducer_output
             )
         ]
     
     def mapper_init_metro(self):
         """ build local spatial index of US metro areas """
-        self.lookup = CachedMetroLookup(precision=GEOHASH_PRECISION)
-        self.hr = 0
+        self.lookup = CachedMetroLookup(precision=METRO_GEOHASH_PRECISION)
 
-    def mapper_metro(self, _, line):
-        data = loads(line)
+    def mapper_metro(self, _, data):
+        """ map each osm POI and geotweets based on spatial lookup of metro area """
+        # OSM POI record
         if 'tags' in data:
-            tag = 1
-            # initalize data for POI
+            type_tag = 1
             lonlat = data['coordinates']
-            payload = (tag, lonlat, data['tags'])
+            payload = data['tags']
+        # Tweet with coordinates from Streaming API
         elif 'user_id' in data:
-            tag = 2
-            # ignore HR geo-tweets for job postings
-            expr = "|".join(["(job)", "(hiring)", "(career)"])
-            if data['description'] and re.findall(expr, data['description']):
-                self.hr += 1
+            type_tag = 2
+            # only allow tweets from the above known domains to try and filter out
+            # noise such as HR tweets, Weather reports and news updates
+            accept = [
+                "twitter\.com",
+                "foursquare\.com",
+                "instagram\.com",
+                "untappd\.com"
+            ]
+            expr = "|".join(accept)
+            if not re.findall(expr, data['source']):
                 return
-            # initialize data for getweet
             lonlat = data['lonlat']
-            payload = (tag, lonlat, None)
+            payload = None
+        # spatial lookup using Rtree and caching results
         metro = self.lookup.get(lonlat, METRO_DISTANCE)
         if not metro:
             return
-        yield metro.encode('utf-8'), dumps(payload)
+        yield metro, (type_tag, lonlat, payload)
 
     def reducer_metro(self, metro, values):
         """
@@ -122,13 +117,10 @@ class MRMetroNearbyOSMTagCount(MRJob):
         For each tweet lookup nearby POI, and emit tag values for predefined tags.
         
         """
-        lookup = CachedLookup(precision=GEOHASH_PRECISION+1)
+        lookup = CachedLookup(precision=POI_GEOHASH_PRECISION)
         for i, value in enumerate(values):
-            if not value:
-                continue
-            value = loads(value)
-            mr_tag, lonlat, data = value
-            if mr_tag == 1:
+            type_tag, lonlat, data = value
+            if type_tag == 1:
                 # OSM POI node, add to index
                 lookup.insert(i, dict(
                     geometry=dict(type='Point', coordinates=project(lonlat)),
@@ -138,60 +130,45 @@ class MRMetroNearbyOSMTagCount(MRJob):
                 # geotweet, lookup nearest POI from index
                 if not lookup.data_store:
                     return
-                names = []
+                poi_names = []
                 kwargs = dict(buffer_size=POI_DISTANCE, multiple=True)
                 # lookup nearby POI from Rtree index (caching results)
                 # for any tags we care about emit the tags value and 1
                 for poi in lookup.get(lonlat, **kwargs):
-                    if any(tag in poi['tags'] for tag in POI_TAGS):
-                        if 'name' in poi['tags']:
-                            names.append(poi['tags']['name'])  
-                for osm_tag in set(names):
-                    if not osm_tag:
-                        continue
-                    key = (metro, osm_tag.encode('utf-8'))
-                    yield dumps(key), dumps(1)
+                    has_tag = [ tag in poi['tags'] for tag in POI_TAGS ]
+                    if any(has_tag) and 'name' in poi['tags']:
+                        poi_names.append(poi['tags']['name'])
+                for poi in set(poi_names):
+                    yield (metro, poi), 1
 
-    def reducer_tag_count(self, key, values):
-        total = 0
-        if not key:
-            return
-        for value in values:
-            if not value:
-                continue
-            try:
-                value = loads(value)
-                total += int(value)
-            except ValueError as e:
-                continue
-        if total == 0:
-            return
-        metro, tag = ujson.loads(key)
-        yield metro.encode('utf-8'), dumps((total, tag))
+    def reducer_count(self, key, values):
+        """ count occurences for each (metro, POI) record """
+        total = sum(values)
+        metro, poi = key
+        # group data by metro areas for final output    
+        yield metro, (total, poi)
 
-    def reducer_init_mongo(self):
+    def reducer_init_output(self):
+        """ establish connection to MongoDB """
         self.mongo = MongoGeo(db=DB, collection=COLLECTION, timeout=MONGO_TIMEOUT)
     
-    def reducer_mongo(self, metro, values):
-        if not metro:
-            return
+    def reducer_output(self, metro, values):
+        """ store each record in MongoDB and output tab delimited lines """
         records = []
-        for record in values:
-            if not record:
-                continue
-            try:
-                total, tag = ujson.loads(record)
-            except ValueError as e:
-                continue
+        # build up list of data for each metro area and submit as one network
+        # call instead of individually 
+        for value in values:
+            total, poi = value
             records.append(dict(
                 metro_area=metro,
-                tag=tag,
+                poi=poi,
                 count=total
             ))
-            yield dumps((metro, total)), tag.encode('utf-8')
-        if records:
-            self.mongo.insert_many(records)
+            output = "{0}\t{1}\t{2}"
+            output = output.format(metro.encode('utf-8'), total, poi.encode('utf-8'))
+            yield None, output
+        self.mongo.insert_many(records)
 
 
 if __name__ == '__main__':
-    MRMetroNearbyOSMTagCount.run()
+    POINearTweetsMRJob.run()
