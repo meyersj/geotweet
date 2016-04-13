@@ -44,7 +44,7 @@ precision   width   height
 """
 
 
-class POINearTweetsMRJob(MRJob):
+class POINearbyTweetsMRJob(MRJob):
     """ Count common OSM points-of-interest around Tweets with coordinates """
     
     INPUT_PROTOCOL = JSONValueProtocol
@@ -171,4 +171,4 @@ class POINearTweetsMRJob(MRJob):
 
 
 if __name__ == '__main__':
-    POINearTweetsMRJob.run()
+    POINearbyTweetsMRJob.run()
