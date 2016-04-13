@@ -127,7 +127,7 @@ class SpatialLookup(FileReader):
 
 
 class CachedLookup(SpatialLookup):
-    """ Dowload counties geojson, build index and provide lookup functionality """
+    """ Cache results of spatial lookups """
 
     geohash_cache = {}
 
@@ -159,7 +159,7 @@ class CachedLookup(SpatialLookup):
 
 
 class CachedCountyLookup(CachedLookup):
-    """ Dowload counties geojson, build index and provide lookup functionality """
+    """ Cached spatial lookup for US counties """
 
     def __init__(self, src=COUNTIES_GEOJSON, **kwargs):
         super(CachedCountyLookup, self).__init__(src=src, **kwargs)
@@ -172,7 +172,7 @@ class CachedCountyLookup(CachedLookup):
 
 
 class CachedMetroLookup(CachedLookup):
-    """ Dowload metro areas geojson, build index and provide lookup functionality """
+    """ Cached spatial lookup for US metro areas """
 
     def __init__(self, src=METRO_GEOJSON, **kwargs):
         super(CachedMetroLookup, self).__init__(src=src, **kwargs)
