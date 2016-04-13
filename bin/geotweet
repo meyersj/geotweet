@@ -2,6 +2,7 @@
 import os
 import sys
 import argparse
+import logging
 
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(root)
@@ -90,6 +91,7 @@ osm_parser.add_argument('--region', **region_args)
 
 def main():
     args = parser.parse_args()
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
     if args.which == 'stream':
         Geotweet(args).stream()
     elif args.which == 'load':
