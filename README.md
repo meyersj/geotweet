@@ -112,7 +112,7 @@ See `example_conf/load-envvars.sh` for all options.
 
 #### Example
 
-```
+```bash
 pip install geotweet
 
 # Twitter
@@ -141,7 +141,7 @@ geotweet osm --bucket already.created.bucket --region us-west-2 --states states.
 To run as daemon on Ubuntu with Upstart copy
 `example_conf/geotweet-stream.conf` and `example_conf/geotweet-load.conf`
 to `/etc/init` and set the environment variables in those files then run:
-```
+```bash
 sudo service geotweet-stream start
 sudo service geotweet-load start
 ```
@@ -194,7 +194,7 @@ Listen for log file rotations. Each archived file will be uploaded into an Amazo
 After log files have been collected for long enough run a Map Reduce
 job to count word occurences by each County, State and the entire US.
 
-```
+```bash
 git clone https://github.com/meyersj/geotweet.git
 cd geotweet
 virtualenv env
@@ -208,7 +208,7 @@ cd /path/to/geotweet/bin
 ##### Job 1
 MapReduce Word Count from tweets broken down by
 US, State and County (cached spatial lookup using Shapely/Rtree)
-```
+```bash
 ./mrjob_runner state-county-words
 ```
 
@@ -217,7 +217,7 @@ MapReduce Word Count of tweets broken down by
 Metro areas (cached spatial lookup using Shapely/Rtree).
 Final results will be persisted to MongoDB if `GEOTWEET_MONGODB_URI`
 is set to a valid uri.
-```
+```bash
 export GEOTWEET_MONGODB_URI="mongodb://127.0.0.1:27017"
 ./mrjob_runner metro-words
 ```
@@ -240,7 +240,7 @@ spatial search for nearby POI's for each tweet and emit count for each nearby PO
 
 Final results will be persisted to MongoDB if `GEOTWEET_MONGODB_URI`
 is set to a valid uri.
-```
+```bash
 export GEOTWEET_MONGODB_URI="mongodb://127.0.0.1:27017"
 ./mrjob_runner poi-nearby
 ```
@@ -265,13 +265,13 @@ python setup.py sdist
 ```
 
 Set all of the required config parameters, set all paths
-```
+```bash
 cp example_conf/mrjob.conf ~/.mrjob.conf
 vim ~/.mrjob.conf  
 ```
 
 Configure the job with correct input and output buckets
-```
+```bash
 cd /path/to/geotweet/bin
 vim emrjob_runner       # make sure you set the `src` and `dst` S3 buckets
 
@@ -283,7 +283,7 @@ vim emrjob_runner       # make sure you set the `src` and `dst` S3 buckets
 ### Tests
 
 Tests available to run after cloning and installing dependencies.
-```
+```bash
 nosetests geotweet/tests/unit/* 
 
 # requires environment variables specified above to be set
@@ -295,14 +295,20 @@ nosetests geotweet/tests/integration/*
 
 To build a local virtual machine with MongoDB you need `virtualbox`/`vagrant`
 installed and a `ubuntu/trusty64` box
-```
+```bash
 git clone https://github.com/meyersj/geotweet.git
 cd geotweet
 vagrant box add ubuntu/trusty64
 vagrant up
 vagrant ssh
-cd /vagrant   # contains repository
+cd /vagrant/bin
 
-# all packages are already installed
-# geotweet executable is on your path
+# run mapreduce job
+./mrjob_runner poi-nearby
+
+# connect to mongo shell and query results
+mongo geotweet
+db.metro_osm.find({
+    metro_area: "Portland, OR--WA"
+}).sort({count:-1})
 ```
