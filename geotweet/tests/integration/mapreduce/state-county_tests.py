@@ -16,22 +16,22 @@ COUNTIES_GEOJSON_LOCAL = os.path.join(DATA_DIR,'us_counties102005.geojson')
 os.environ['COUNTIES_GEOJSON_LOCAL'] = COUNTIES_GEOJSON_LOCAL
 
 # COUNTIES_GEOJSON_LOCAL environment variable must be set before import
-from geotweet.mapreduce.state_county_wordcount import MRStateCountyWordCount
+from geotweet.mapreduce.state_county_wordcount import StateCountyWordCountJob
 from geotweet.mapreduce.state_county_wordcount import GEOHASH_PRECISION
 
 
 def build_input(text, desc="My Account", lonlat=[-122.5, 45.4]):
-    return json.dumps(dict(
+    return dict(
         description=desc,
         text=text,
         lonlat=lonlat
-    ))
+    )
 
 
 class MapperTweetTests(unittest.TestCase):
 
     def setUp(self):
-        self.mr = MRStateCountyWordCount()
+        self.mr = StateCountyWordCountJob()
         self.mr.mapper_init()
 
     def test_valid_1(self):
