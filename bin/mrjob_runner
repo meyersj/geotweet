@@ -32,7 +32,7 @@ else
     echo "Must specify which job to run:"
     echo -e "\t'state-county-words' or 'metro-words' or 'poi-nearby'"
     echo "Usage:"
-    echo -e "\t./mr_runner.sh state-county-words"
+    echo -e "\t./mrjob_runner.sh state-county-words"
     exit 1
 fi
 

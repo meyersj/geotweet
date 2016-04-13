@@ -1,0 +1,64 @@
+#!/bin/bash
+
+
+SCRIPTDIR=`dirname $(readlink -f $0)`
+JOBDIR=`readlink -f ${SCRIPTDIR}/../geotweet/mapreduce`
+
+# MR Job Parameters
+job=$1
+interpreter=../env/bin/python
+state_county_words_script="${JOBDIR}/state_county_wordcount.py"
+metro_words_script="${JOBDIR}/metro_wordcount.py"
+poi_nearby_script="${JOBDIR}/poi_nearby_tweets.py"
+
+
+# === Input and Output S3 Buckets ===
+
+# You must set these parameters to point to S3 buckets containing data
+# collected via `geotweet stream/load` and `geotweet osm`
+
+# this file must exist and be configured correctly 
+conf="/home/${USER}/.mrjob.conf"
+
+# this bucket is public and contains test osm and twitter data
+test_bucket="s3://jeffrey.alan.meyers.geotweet-test"
+twitter_files="${test_bucket}/twitter-stream.log.2016-03-26_13-13"
+osm_files="${test_bucket}/oregon-latest.poi"
+
+# you must set this to a folder that does not exist
+now=`date +"%Y%m%d%H%M"`
+dst="s3://already.existing.bucket/${job}-${now}"
+
+# ===================================
+
+
+# check that config file exists
+if [ ! -f ${conf} ]; then
+    echo "Config file ${conf}" must exist and be configured
+    exit 1
+fi
+
+
+# set script and data sources
+if [ "${job}" == "state-county-words" ]; then
+    script=${state_county_words_script}
+    src=${twitter_files}
+elif [ "${job}" == "metro-words" ]; then
+    script=${metro_words_script}
+    src=${twitter_files}
+elif [ "${job}" == "poi-nearby" ]; then 
+    script=${poi_nearby_script}
+    src="${twitter_files} ${osm_files}"
+else
+    echo "Must specify which job to run:"
+    echo -e "\t'state-county-words' or 'metro-words' or 'poi-nearby'"
+    echo "Usage:"
+    echo -e "\t./emrjob_runner.sh state-county-words"
+    exit 1
+fi
+
+
+# run job
+job_cmd="${interpreter} ${script} -r emr ${src} --output-dir=${dst} --no-output"
+echo ${job_cmd}
+${job_cmd}
