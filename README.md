@@ -8,12 +8,11 @@ MIT License. Copyright (c) 2016 Jeffrey Alan Meyers. See `LICENSE.md`
 
 ### About
 
-This project contains command line utility to log tweets from the
+This project contains a command line utility to log tweets from the
 [Twitter Streaming API](https://dev.twitter.com/streaming/reference/post/statuses/filter)
 and load them into Amazon S3 Buckets.
-The log files in S3 are then used as input for Elastic MapReduce jobs.
-Also contains utility to download Geofabrik OSM extracts, filter out POI nodes
-and load into S3 Buckets.
+You can also download Geofabrik OSM extracts, filter out Point-of-Interest nodes and load them data S3 Buckets.
+The OSM and Twitter log files in S3 are used as input for Elastic MapReduce jobs.
 
 
 ### Install
@@ -21,10 +20,8 @@ and load into S3 Buckets.
 Dependencies
 ```bash
 apt-get update
-apt-get install python-dev \
-    libgeos-dev libspatialindex- \
-    build-essential protobuf-compiler libprotobuf-dev
-
+apt-get install python-dev libgeos-dev libspatialindex- \
+        build-essential protobuf-compiler libprotobuf-dev
 # if you don't already have pip
 curl https://bootstrap.pypa.io/get-pip.py | python
 ```
@@ -39,10 +36,9 @@ Installing this package will provide you with a python executable named `geotwee
 ### Usage
 
 ```bash
-geotweet stream|load|geomongo|osm [options]
+geotweet stream|load|osm [options]
 geotweet stream --help                  # store Twitter Streaming API to log files
 geotweet load --help                    # load log files to S3 bucket
-geotweet geomongo --help                # load GeoJSON files into MongoDB instance
 geotweet osm --help                     # download osm extracts from geofabrik
                                         # extract POI nodes and load into S3 bucket
 ```
@@ -77,22 +73,6 @@ optional arguments:
   --region REGION    AWS S3 Region such as 'us-west-2'
 ```
 
-#### geomongo
-
-Load GeoJSON files into MongoDB
-```
-usage: geotweet geomongo [-h] [--mongo MONGO] [--db DB] file collection
-
-positional arguments:
-  file           Path to geojson file
-  collection     Name of collection
-
-optional arguments:
-  -h, --help     show this help message and exit
-  --mongo MONGO  MongodDB URI (default=mongodb://127.0.0.1:27017)
-  --db DB        Name of db (default=geotweet)
-```
-
 #### osm
 
 Download OSM extracts from GeoFabrik, extract POI nodes and load to S3 Bucket
@@ -124,9 +104,6 @@ See `example_conf/load-envvars.sh` for all options.
 + `AWS_BUCKET` (if not provided as cli param)
 + `AWS_DEFAULT_REGION` (if not provided as cli param)
 
-For `geotweet geomongo`
-+ `GEOTWEET_MONGODB_URI`(if not provided as cli param)
-
 
 #### Example
 
@@ -144,10 +121,16 @@ export AWS_ACCESS_KEY_ID="..."
 export AWS_SECRET_ACCESS_KEY="..."
 
 # start streaming to log files rotate log file every 5 minutes
-geotweet stream --log-dir /tmp/geotweet --log-interval 5 &  
+geotweet stream --log-dir /tmp/geotweet --log-interval 5
+
+# Open and new terminal
 
 # start loading archived log rotations to S3
-geotweet load --log-dir /tmp/geotweet --bucket already.created.bucket --region us-west-2 &
+geotweet load --log-dir /tmp/geotweet --bucket already.created.bucket --region us-west-2
+
+# To download and load OSM data to S3
+echo -e "Oregon\nWashington" > states.txt
+geotweet osm --bucket already.created.bucket --region us-west-2 --states states.txt
 ```
 
 To run as daemon on Ubuntu with Upstart copy
