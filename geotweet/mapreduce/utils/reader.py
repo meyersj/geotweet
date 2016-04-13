@@ -5,7 +5,7 @@ import hashlib
 
 
 class FileReader(object):
-    """ Read file from the local file system or remote url """
+    """ Read file from the local file system or remote url and cache """
 
     def is_url(self, src):
         return src.startswith('http')
