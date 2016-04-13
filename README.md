@@ -303,5 +303,12 @@ vagrant up
 vagrant ssh
 cd /vagrant/bin
 
+# run mapreduce job
 ./mrjob_runner poi-nearby
+
+# connect to mongo shell and query results
+mongo geotweet
+db.metro_osm.find({
+    metro_area: "Portland, OR--WA"
+}).sort({count:-1})
 ```
