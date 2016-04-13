@@ -36,8 +36,8 @@ bucket_help = "AWS S3 Bucket name"
 region_help = "AWS S3 Region such as 'us-west-2'"
 mongo_help = "MongodDB URI (default={0})".format(DEFAULT_MONGODB_URI)
 db_help = "Name of db (default={0})".format(DEFAULT_DB)
-collection_help = "Name of collection"
-geojson_help = "Path to geojson file"
+#collection_help = "Name of collection"
+#geojson_help = "Path to geojson file"
 output_help = "Location of output files (default={0})".format(DEFAULT_OUT_DIR)
 states_help = "File containing list of states to download and load"
 
@@ -47,10 +47,10 @@ log_interval_args = dict(type=int, default=LOG_INTERVAL, help=log_interval_help)
 bbox_args = dict(type=str, help=bbox_help)
 bucket_args = dict(type=str, default=AWS_BUCKET, help=bucket_help)
 region_args = dict(type=str, default=AWS_REGION, help=region_help)
-geojson_args = dict(type=str, help=geojson_help)
 mongo_args = dict(type=str, default=DEFAULT_MONGODB_URI, help=mongo_help)
 db_args = dict(type=str, default=DEFAULT_DB, help=db_help)
-collection_args = dict(type=str, help=collection_help)
+#collection_args = dict(type=str, help=collection_help)
+#geojson_args = dict(type=str, help=geojson_help)
 output_args = dict(type=str, default=DEFAULT_OUT_DIR, help=output_help)
 states_args = dict(type=str, default=DEFAULT_STATES, help=states_help)
 
@@ -73,12 +73,12 @@ listen_parser.add_argument('--bucket', **bucket_args)
 listen_parser.add_argument('--region', **region_args)
 
 # add geomongo args
-geomongo_parser = subparser.add_parser('geomongo')
-geomongo_parser.set_defaults(which='geomongo')
-geomongo_parser.add_argument('file', **geojson_args)
-geomongo_parser.add_argument('collection', **collection_args)
-geomongo_parser.add_argument('--mongo', **mongo_args)
-geomongo_parser.add_argument('--db', **db_args)
+#geomongo_parser = subparser.add_parser('geomongo')
+#geomongo_parser.set_defaults(which='geomongo')
+#geomongo_parser.add_argument('file', **geojson_args)
+#geomongo_parser.add_argument('collection', **collection_args)
+#geomongo_parser.add_argument('--mongo', **mongo_args)
+#geomongo_parser.add_argument('--db', **db_args)
 
 # add stream args
 osm_parser = subparser.add_parser('osm')
@@ -96,8 +96,8 @@ def main():
         Geotweet(args).stream()
     elif args.which == 'load':
         Geotweet(args).load()
-    elif args.which == 'geomongo':
-        GeoMongo(args).run()
+    #elif args.which == 'geomongo':
+    #    GeoMongo(args).run()
     elif args.which == 'osm':
         OSMRunner(args).run()
 
