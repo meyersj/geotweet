@@ -6,8 +6,7 @@ import json
 
 from mrjob.job import MRJob
 from mrjob.step import MRStep
-
-import Geohash
+from mrjob.protocol import JSONProtocol, JSONValueProtocol, RawValueProtocol
 
 try:
     # when running on EMR a geotweet package will installed with pip
@@ -44,6 +43,10 @@ class StateCountyWordCountJob(MRJob):
     
     """
 
+    INPUT_PROTOCOL = JSONValueProtocol
+    INTERNAL_PROTOCOL = JSONProtocol
+    OUTPUT_PROTOCOL = RawValueProtocol
+
     def steps(self):
         return [
             MRStep(
@@ -59,14 +62,11 @@ class StateCountyWordCountJob(MRJob):
         self.counties = CachedCountyLookup(precision=GEOHASH_PRECISION)
         self.extractor = WordExtractor()
     
-    def mapper(self, _, line):
-        data = json.loads(line)
+    def mapper(self, _, data):
         # ignore HR geo-tweets for job postings
         if data['description'] and self.hr_filter(data['description']):
             return
-        # project coordinates to ESRI:102005 and encode as geohash
         lonlat = data['lonlat']
-        #geohash = Geohash.encode(lat, lon, precision=GEOHASH_PRECISION)
         # spatial lookup for state and county
         state, county = self.counties.get(lonlat)
         if not state or not county:
@@ -95,7 +95,11 @@ class StateCountyWordCountJob(MRJob):
             state = key[1]
         if len(key) >= 3:
             county = key[2]
-        yield (word, state, county), total
+        output = "{0}\t{1}\t{2}\t{3}"
+        word = word.encode('utf-8')
+        state = state.encode('utf-8')
+        county = county.encode('utf-8')
+        yield None, output.format(word, state, county, total)
 
 
 if __name__ == '__main__':
