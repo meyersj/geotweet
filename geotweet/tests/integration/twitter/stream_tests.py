@@ -6,7 +6,7 @@ import sys
 
 from . import ROOT
 from geotweet.twitter.stream import TwitterStream
-from geotweet.twitter.steps import ProcessStep
+from geotweet.twitter.stream_steps import ProcessStep
 
 
 TIMEOUT = 1
