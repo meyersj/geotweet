@@ -34,7 +34,7 @@ GEOHASH_PRECISION = 7
 MIN_WORD_COUNT = 5              # ignore low occurences
 
 
-class MRStateCountyWordCount(MRJob):
+class StateCountyWordCountJob(MRJob):
     """
     Count word occurences for US tweets by entire county, by State and County
     
@@ -99,4 +99,4 @@ class MRStateCountyWordCount(MRJob):
 
 
 if __name__ == '__main__':
-    MRStateCountyWordCount.run()
+    StateCountyWordCountJob.run()
