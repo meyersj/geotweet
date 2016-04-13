@@ -97,8 +97,8 @@ class StateCountyWordCountJob(MRJob):
             county = key[2]
         output = "{0}\t{1}\t{2}\t{3}"
         word = word.encode('utf-8')
-        state = state.encode('utf-8')
-        county = county.encode('utf-8')
+        state = state.encode('utf-8') if state else None
+        county = county.encode('utf-8') if county else None
         yield None, output.format(word, state, county, total)
 
 
