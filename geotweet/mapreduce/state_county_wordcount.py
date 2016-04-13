@@ -3,13 +3,11 @@ import os
 from os.path import dirname
 import re
 import json
-import logging
 
 from mrjob.job import MRJob
 from mrjob.step import MRStep
 
 import Geohash
-
 
 try:
     # when running on EMR a geotweet package will installed with pip
@@ -19,10 +17,6 @@ except ImportError:
     # when running locally utils using relative import
     from utils.words import WordExtractor
     from utils.lookup import project, CachedCountyLookup
-
-
-# must log to stderr when running on EMR or job will fail
-logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
 
 """
