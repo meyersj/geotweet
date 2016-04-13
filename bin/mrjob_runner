@@ -1,0 +1,43 @@
+#!/bin/bash
+
+SCRIPTDIR=`dirname $(readlink -f $0)`
+JOBDIR=`readlink -f ${SCRIPTDIR}/../geotweet/mapreduce`
+DATADIR=`readlink -f ${SCRIPTDIR}/../geotweet/data/mapreduce`
+
+
+# MR Job Parameters
+job=$1
+interpreter=../env/bin/python
+state_county_words_script="${JOBDIR}/state_county_wordcount.py"
+metro_words_script="${JOBDIR}/metro_wordcount.py"
+poi_nearby_script="${JOBDIR}/poi_nearby_tweets.py"
+
+
+# local Test Data
+twitter_log="${DATADIR}/twitter-stream.log.2016-03-26_13-13"
+osm_log="${DATADIR}/oregon-latest.poi"
+
+
+# set script and data sources
+if [ "${job}" == "state-county-words" ]; then
+    script=${state_county_words_script}
+    src=${twitter_log}
+elif [ "${job}" == "metro-words" ]; then
+    script=${metro_words_script}
+    src=${twitter_log}
+elif [ "${job}" == "poi-nearby" ]; then 
+    script=${poi_nearby_script}
+    src="${twitter_log} ${osm_log}"
+else
+    echo "Must specify which job to run:"
+    echo -e "\t'state-county-words' or 'metro-words' or 'poi-nearby'"
+    echo "Usage:"
+    echo -e "\t./mr_runner.sh state-county-words"
+    exit 1
+fi
+
+
+# run job
+job_cmd="${interpreter} ${script} ${src}"
+echo ${job_cmd}
+${job_cmd}
