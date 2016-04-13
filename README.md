@@ -197,40 +197,28 @@ job to count word occurences by each County, State and the entire US.
 ```
 git clone https://github.com/meyersj/geotweet.git
 cd geotweet
-pip install -r requirements.txt
+pip install -r requirements.txt         # plus required system packages
 ```
 
 Run MapReduce jobs
 ```bash
-# cd /path/to/geotweet
-data=$PWD/geotweet/data/mapreduce/twitter-stream.log.2016-03-27_01-53
-osm=$PWD/geotweet/data/mapreduce/oregon-latest.poi
-
-# move to MapReduce jobs directory
-cd geotweet/mapreduce
+cd /path/to/geotweet/bin
 ```
-
 ##### Job 1
-Map Reduce Word Count broken down by US, State and County (Local spatial lookup using Shapely/Rtree)
+MapReduce Word Count from tweets broken down by
+US, State and County (cached spatial lookup using Shapely/Rtree)
 ```
-python state_county_wordcount.py $data
-
-# Output tuples: `((Word, State ID, County ID), Total)`
-# (("yesterday", "20", "197"), 30)
+./mrjob_runner state-county-words
 ```
- 
-###### Job 2
-Requires MongoDB instance
 
-In each Map Task, build a local spatial index of metro areas.
-For each tweet do a spatial lookup and emit words.
-Ouput is word count in tweets grouped by metro areas.
-Will persist final output to MongoDB if `GEOTWEET_MONGODB_URI`
+##### Job 2
+MapReduce Word Count of tweets broken down by
+Metro areas (cached spatial lookup using Shapely/Rtree).
+Final results will be persisted to MongoDB if `GEOTWEET_MONGODB_URI`
 is set to a valid uri.
-
-```bash
+```
 export GEOTWEET_MONGODB_URI="mongodb://127.0.0.1:27017"
-python metro_mongo_wordcount.py $data
+./mrjob_runner metro-words
 ```
 
 Output stored in MongoDB `db=geotweet` as `collection=metro_word` as documents
@@ -242,23 +230,18 @@ Output stored in MongoDB `db=geotweet` as `collection=metro_word` as documents
 }
 ```
 
-###### Job 3
-Requires MongoDB instance
-
-In each Map Task, build a local spatial index of metro areas.
-Input is log of tweets and extracted OSM POI nodes.
+##### Job 3
+Input is log of geographic tweets and points-of-interest extracted from OSM.
 For each input record look up metro area and emit data using metro as key
-and tag is tweet or POI.
 
-In reduce for each metro area, build index of POI nodes, then do
-spatial search for nearby POIs for each tweet. Emit name of
-each nearby POI.
+In reduce for each metro area, build index of points-of-interest and do
+spatial search for nearby POI's for each tweet and emit count for each nearby POI.
 
-Persis results to MongoDB
-
-```bash
+Final results will be persisted to MongoDB if `GEOTWEET_MONGODB_URI`
+is set to a valid uri.
+```
 export GEOTWEET_MONGODB_URI="mongodb://127.0.0.1:27017"
-python metro_nearby_osm_tag_count.py $data
+./mrjob_runner poi-nearby
 ```
 
 Output stored in MongoDB `db=geotweet` as `collection=metro_osm` as documents
@@ -270,28 +253,41 @@ Output stored in MongoDB `db=geotweet` as `collection=metro_osm` as documents
 }
 ```
 
-
 Run **EMR** Job
+
+First build a package that will be used to bootstrap the hadoop nodes
 ```bash
-# set all of the config parameters, make sure all example paths are corrected
+cd /path/to/geotweet/repo
+
+# build and store package in $PWD/dist
+python setup.py sdist   
+```
+
+Set all of the required config parameters, set all paths
+```
 cp example_conf/mrjob.conf ~/.mrjob.conf
-vim ~/.mrjob.conf       
+vim ~/.mrjob.conf  
+```
 
-# set input/output S3 buckets
-src=s3://some.s3.bucket/input                               # folder containing logs from `streamer.py`
-dst=s3://some.s3.bucket/output/<new folder>                 # the new folder should not already exist
+Configure the job with correct input and output buckets
+```
+cd /path/to/geotweet/bin
+vim emrjob_runner       # make sure you set the `src` and `dst` S3 buckets
 
-# start job and supress stdout output (will go to s3) 
-python geotweet/mapreduce/state_county_wordcount.py $src -r emr --output-dir=$dst --no-output       
+./emrjob_runner state-county-words
+./emrjob_runner metro-words
+./emrjob_runner poi-nearby
 ```
 
 ### Tests
 
 Tests available to run after cloning and installing dependencies.
 ```
-nosetests geotweet/tests/twitter        # requires environment variables listed above to be set
-nosetests geotweet/tests/mapreduce
-nosetests geotweet/tests/geomongo       # requires MongoDB instance running locally
+nosetests geotweet/tests/unit/* 
+
+# requires environment variables specified above to be set
+# and MongoDB instance running locally
+nosetests geotweet/tests/integration/*  
 ```
 
 ### Virtual Machine
