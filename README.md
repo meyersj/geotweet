@@ -197,7 +197,8 @@ job to count word occurences by each County, State and the entire US.
 ```
 git clone https://github.com/meyersj/geotweet.git
 cd geotweet
-pip install -r requirements.txt         # plus required system packages
+virtualenv env
+./env/bin/pip install -r requirements.txt         # plus required system packages
 ```
 
 Run MapReduce jobs
@@ -257,7 +258,7 @@ Run **EMR** Job
 
 First build a package that will be used to bootstrap the hadoop nodes
 ```bash
-cd /path/to/geotweet/repo
+cd /path/to/repo/geotweet
 
 # build and store package in $PWD/dist
 python setup.py sdist   
