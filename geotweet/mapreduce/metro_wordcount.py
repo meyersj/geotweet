@@ -7,17 +7,20 @@ import logging
 
 from mrjob.job import MRJob
 from mrjob.step import MRStep
-
+from mrjob.protocol import JSONProtocol, JSONValueProtocol, RawValueProtocol
+from pymongo.errors import ServerSelectionTimeoutError
 
 try:
     # when running on EMR a geotweet package will be loaded onto PYTHON PATH
     from geotweet.mapreduce.utils.words import WordExtractor
-    from geotweet.mapreduce.utils.lookup import project, CachedMetroLookup
+    from geotweet.mapreduce.utils.proj import project
+    from geotweet.mapreduce.utils.lookup import CachedMetroLookup
     from geotweet.geomongo.mongo import MongoGeo
 except ImportError:
     # running locally
     from utils.words import WordExtractor
-    from utils.lookup import project, CachedMetroLookup
+    from utils.proj import project
+    from utils.lookup import CachedMetroLookup
     parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.insert(0, parent) 
     from geomongo.mongo import MongoGeo
@@ -76,6 +79,10 @@ class MRMetroMongoWordCount(MRJob):
         into MongoDB
 
     """
+    
+    INPUT_PROTOCOL = JSONValueProtocol
+    INTERNAL_PROTOCOL = JSONProtocol
+    OUTPUT_PROTOCOL = RawValueProtocol
 
     def steps(self):
         return [
@@ -86,8 +93,8 @@ class MRMetroMongoWordCount(MRJob):
                 reducer=self.reducer
             ),
             MRStep(
-                reducer_init=self.reducer_init_mongo,
-                reducer=self.reducer_mongo
+                reducer_init=self.reducer_init_output,
+                reducer=self.reducer_output
             )
         ]
     
@@ -96,8 +103,7 @@ class MRMetroMongoWordCount(MRJob):
         self.lookup = CachedMetroLookup(precision=GEOHASH_PRECISION)
         self.extractor = WordExtractor()
    
-    def mapper(self, _, line):
-        data = json.loads(line)
+    def mapper(self, _, data):
         # ignore HR geo-tweets for job postings
         expr = "|".join(["(job)", "(hiring)", "(career)"])
         if data['description'] and re.findall(expr, data['description']):
@@ -120,10 +126,15 @@ class MRMetroMongoWordCount(MRJob):
         metro, word = key
         yield metro, (total, word)
 
-    def reducer_init_mongo(self):
-        self.mongo = MongoGeo(db=DB, collection=COLLECTION, timeout=MONGO_TIMEOUT)
-
-    def reducer_mongo(self, metro, values):
+    def reducer_init_output(self):
+        """ establish connection to MongoDB """
+        try:
+            self.mongo = MongoGeo(db=DB, collection=COLLECTION, timeout=MONGO_TIMEOUT)
+        except ServerSelectionTimeoutError:
+            # failed to connect to running MongoDB instance
+            self.mongo = None
+    
+    def reducer_output(self, metro, values):
         records = []
         for record in values:
             total, word = record
@@ -132,8 +143,11 @@ class MRMetroMongoWordCount(MRJob):
                 word=word,
                 count=total
             ))
-            yield (metro, total), word
-        self.mongo.insert_many(records)
+            output = "{0}\t{1}\t{2}"
+            output = output.format(metro.encode('utf-8'), total, word.encode('utf-8'))
+            yield None, output
+        if self.mongo:
+            self.mongo.insert_many(records)
 
 
 if __name__ == '__main__':
