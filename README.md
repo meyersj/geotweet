@@ -42,7 +42,7 @@ Installing this package will provide you with a python executable named `geotwee
 
 ```bash
 geotweet stream|load|osm [options]
-geotweet stream --help                  # store Twitter Streaming API to log files
+geotweet stream --help                  # store Twitter Streaming API output to log files
 geotweet load --help                    # load log files to S3 bucket
 geotweet osm --help                     # download osm extracts from geofabrik
                                         # extract POI nodes and load into S3 bucket
