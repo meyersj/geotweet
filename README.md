@@ -24,7 +24,7 @@ MapReduce job. `(metro area, number of tweets nearby, point-of-interest)`
 Dependencies
 ```bash
 apt-get update
-apt-get install python-dev libgeos-dev libspatialindex- \
+apt-get install python-dev libgeos-dev libspatialindex-dev \
         build-essential protobuf-compiler libprotobuf-dev
 # if you don't already have pip
 curl https://bootstrap.pypa.io/get-pip.py | python
