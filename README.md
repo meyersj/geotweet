@@ -190,8 +190,7 @@ Listen for log file rotations. Each archived file will be uploaded into an Amazo
 
 #### 3. Process with EMR
 
-After log files have been collected for long enough run a Map Reduce
-job to count word occurences by each County, State and the entire US.
+After log files have been collected for long enough run some MapReduce jobs
 
 ```bash
 git clone https://github.com/meyersj/geotweet.git
