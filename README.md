@@ -17,8 +17,7 @@ The OSM and Twitter log files in S3 are used as input for Elastic MapReduce jobs
 [Example output](https://raw.githubusercontent.com/meyersj/geotweet/master/mapreduce_results/poi-nearby.log.sorted)
 after processing 2GB of tweets and the entire USA OSM extract with the
 [poi_nearby_osm.py](https://github.com/meyersj/geotweet/blob/master/geotweet/mapreduce/poi_nearby_tweets.py)
-MapReduce job.
-
+MapReduce job. `(metro area, number of tweets nearby, point-of-interest)`
 
 ### Install
 
