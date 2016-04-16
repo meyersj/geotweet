@@ -89,7 +89,7 @@ class POINearbyTweetsMRJob(MRJob):
         # Tweet with coordinates from Streaming API
         elif 'user_id' in data:
             type_tag = 2
-            # only allow tweets from the above known domains to try and filter out
+            # only allow tweets from the listed domains to try and filter out
             # noise such as HR tweets, Weather reports and news updates
             accept = [
                 "twitter\.com",
@@ -102,7 +102,7 @@ class POINearbyTweetsMRJob(MRJob):
                 return
             lonlat = data['lonlat']
             payload = None
-        # spatial lookup using Rtree and caching results
+        # spatial lookup using Rtree with cached results
         metro = self.lookup.get(lonlat, METRO_DISTANCE)
         if not metro:
             return
@@ -122,7 +122,7 @@ class POINearbyTweetsMRJob(MRJob):
         for i, value in enumerate(values):
             type_tag, lonlat, data = value
             if type_tag == 1:
-                # OSM POI node, add to index
+                # OSM POI node, construct geojson and add to Rtree index
                 lookup.insert(i, dict(
                     geometry=dict(type='Point', coordinates=project(lonlat)),
                     properties=dict(tags=data)
