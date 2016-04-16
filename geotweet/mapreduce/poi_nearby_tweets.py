@@ -25,9 +25,9 @@ except ImportError:
 
 DB = "geotweet"                             # MongoDB database name
 METERS_PER_MILE = 1609
-METRO_DISTANCE = 50 * METERS_PER_MILE       # distace from metro area to include tweet
+METRO_DISTANCE = 50 * METERS_PER_MILE       # distance from metro area to include tweet
 POI_DISTANCE = 100                          # meter search radius from decoded geohash
-MONGO_TIMEOUT = 30 * 1000                   # ms before
+MONGO_TIMEOUT = 30 * 1000
 POI_TAGS = ["amenity", "builing", "shop", "office", "tourism"]
 METRO_GEOHASH_PRECISION = 7                 # used for caching results
 POI_GEOHASH_PRECISION = 8
