@@ -10,4 +10,4 @@ Shapely==1.5.14
 Rtree==0.8.2
 pyproj==1.9.5
 imposm.parser==1.0.7
-ujson==1.35
+ujson==5.4.0
